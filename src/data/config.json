@@ -1,0 +1,22 @@
+{
+  "juego": {
+    "dtMaximo": 0.1
+  },
+  "mapa": {
+    "ancho": 22,
+    "alto": 14
+  },
+  "camara": {
+    "altura": 50,
+    "margen": 1
+  },
+  "pozo": {
+    "radio": 1.4,
+    "altoBrocal": 0.9
+  },
+  "avatar": {
+    "escala": 1.5,
+    "distanciaAlBrocal": 0.5,
+    "velocidadGiro": 10
+  }
+}

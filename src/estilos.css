@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #050608;
+}
+
+#juego {
+  position: fixed;
+  inset: 0;
+  cursor: crosshair;
+}
+
+#juego canvas {
+  display: block;
+}
+
+/* Oscurece los bordes para dar atmósfera; no recibe eventos del ratón. */
+#vineta {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+}
