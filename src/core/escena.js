@@ -6,7 +6,8 @@ const COLOR_SUELO = 0x2e3036;
 const EXTENSION_SUELO = 3;
 
 const LUZ_AMBIENTE = { cielo: 0x6f7f99, suelo: 0x14100c, intensidad: 0.9 };
-const LUZ_LUNA = { color: 0xaabbdd, intensidad: 1.8, posicion: [-10, 25, -8], resolucionSombra: 2048 };
+// Entra desde el lado de la cámara: ilumina el frente de lo que se ve y proyecta las sombras hacia atrás.
+const LUZ_LUNA = { color: 0xaabbdd, intensidad: 1.8, posicion: [-8, 25, 12], resolucionSombra: 2048 };
 // Farol cálido sobre el pozo: lo único bien iluminado del mapa.
 const LUZ_POZO = { color: 0xffc98a, intensidad: 40, altura: 5, alcance: 12 };
 

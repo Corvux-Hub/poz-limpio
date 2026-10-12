@@ -25,7 +25,7 @@ const apuntado = crearApuntado();
 function redimensionar() {
   const { clientWidth: ancho, clientHeight: alto } = contenedor;
   renderer.setSize(ancho, alto);
-  ajustarCamara(camara, config.mapa, config.camara.margen, ancho / alto);
+  ajustarCamara(camara, config.mapa, config.camara, ancho / alto);
 }
 window.addEventListener('resize', redimensionar);
 redimensionar();

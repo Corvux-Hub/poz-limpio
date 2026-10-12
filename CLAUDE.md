@@ -1,6 +1,6 @@
 # POZO LIMPIO (nombre de trabajo)
 
-Survival horror 3D con cámara cenital fija. Defiendes un pozo de agua limpia contra oleadas de ciudadanos contaminados. No se mata a nadie: se les **limpia**. El agua limpia es el arma y la salvación.
+Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes un pozo de agua limpia contra oleadas de ciudadanos contaminados. No se mata a nadie: se les **limpia**. El agua limpia es el arma y la salvación.
 
 ## Visión
 
@@ -15,7 +15,7 @@ Survival horror 3D con cámara cenital fija. Defiendes un pozo de agua limpia co
 ## Stack
 
 - Three.js + Vite, JavaScript con módulos ES (sin frameworks de UI).
-- Cámara cenital fija (`OrthographicCamera` mirando hacia abajo). No rota ni se mueve.
+- Cámara fija en vista 3/4 (`PerspectiveCamera` alta e inclinada hacia el pozo, que queda al centro de la pantalla). No rota ni se mueve. Se ve al avatar de cuerpo completo y todo el mapa a la vez. Inclinación y campo de visión en `config.json`.
 - Modelos finales en glTF/GLB (los hace el desarrollador). Mientras tanto, usar **primitivas** (cubos, cilindros, esferas).
 - Despliegue final como sitio estático (Cloudflare Pages o GitHub Pages).
 
@@ -97,7 +97,7 @@ public/models/     # GLB finales (vacío al inicio)
 
 ## Hitos
 
-1. **Esqueleto**: Vite + Three.js, cámara cenital, suelo, pozo y manguera roja que sigue al cursor.
+1. **Esqueleto**: Vite + Three.js, cámara fija, suelo, pozo y manguera roja que sigue al cursor.
 2. **Chorro**: clic mantenido dispara agua visible (partículas o línea simple), con detección de impacto contra enemigos.
 3. **Un enemigo**: camina hacia el pozo, recibe agua, se aclara de color y se limpia según la fórmula.
 4. **Daño al pozo**: los enemigos llegan, golpean y bajan la integridad. Pantalla de derrota.

@@ -7,8 +7,10 @@
     "alto": 14
   },
   "camara": {
-    "altura": 50,
-    "margen": 1
+    "inclinacion": 58,
+    "campoVision": 35,
+    "margen": 1,
+    "alturaEncuadre": 2.5
   },
   "pozo": {
     "radio": 1.4,

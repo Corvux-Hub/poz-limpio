@@ -8,16 +8,18 @@ const SEGMENTOS_LARGO = 80;
 const SEGMENTOS_RADIO = 10;
 
 // Coordenadas del pivote: x hacia afuera del pozo, y arriba, z a la derecha del avatar.
-// La manguera sale del agua, cruza el brocal, pasa por el costado derecho del avatar
-// y entra a la boquilla que sostiene con ambas manos.
+// La manguera sale del agua, cruza el brocal, baja por fuera del muro, corre por el suelo
+// junto al costado derecho del avatar y sube colgando hasta la boquilla que sostiene.
 export function crearManguera(pozo, agarre, escalaAvatar) {
   const s = escalaAvatar;
   const ruta = new THREE.CatmullRomCurve3([
     new THREE.Vector3(pozo.radioInterior * 0.15, pozo.alturaAgua - 0.1, 0),
-    new THREE.Vector3(pozo.radioInterior * 0.55, pozo.altoBrocal + 0.2, 0.12),
-    new THREE.Vector3(pozo.radio + 0.05, pozo.altoBrocal + 0.15, 0.25),
-    new THREE.Vector3(agarre.x - 0.3 * s, agarre.y - 0.25 * s, 0.36 * s),
-    new THREE.Vector3(agarre.x - 0.05 * s, agarre.y - 0.02 * s, 0.2 * s),
+    new THREE.Vector3(pozo.radioInterior * 0.6, pozo.altoBrocal + 0.2, 0.15),
+    new THREE.Vector3(pozo.radio + 0.05, pozo.altoBrocal + 0.1, 0.3),
+    new THREE.Vector3(pozo.radio + 0.15, pozo.altoBrocal * 0.3, 0.4),
+    new THREE.Vector3(agarre.x - 0.4 * s, RADIO_MANGUERA, 0.32 * s),
+    new THREE.Vector3(agarre.x - 0.15 * s, agarre.y * 0.45, 0.24 * s),
+    new THREE.Vector3(agarre.x - 0.05 * s, agarre.y - 0.08 * s, 0.1 * s),
     agarre.clone(),
   ]);
 
