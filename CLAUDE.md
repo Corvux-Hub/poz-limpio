@@ -17,7 +17,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Three.js + Vite, JavaScript con módulos ES (sin frameworks de UI).
 - Cámara fija en vista 3/4 (`PerspectiveCamera` alta e inclinada hacia el pozo, que queda al centro de la pantalla). No rota ni se mueve. Se ve al avatar de cuerpo completo y todo el mapa a la vez. Inclinación y campo de visión en `config.json`.
 - Modelos finales en glTF/GLB (los hace el desarrollador). Mientras tanto, usar **primitivas** (cubos, cilindros, esferas).
-- Despliegue final como sitio estático (Cloudflare Pages o GitHub Pages).
+- Despliegue como sitio estático en GitHub Pages: `.github/workflows/publicar.yml` corre las pruebas y el build en cada push y publica `dist/` desde la rama principal del repositorio. Cloudflare Pages sirve igual (build `npm run build`, salida `dist`); ver `README.md`.
 
 ## Controles (v1)
 
