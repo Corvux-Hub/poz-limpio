@@ -9,13 +9,17 @@ export const ESTADOS = {
   FUERA: 'fuera',
 };
 
-export function crearEnemigo(id, tipo, { x, z }, radioBase) {
+// `arma` (de armas.json) es opcional: suma alcance de ataque y multiplica la contaminación de cada golpe.
+export function crearEnemigo(id, tipo, { x, z }, radioBase, arma = null) {
   return {
     id,
     tipo,
+    arma,
     x,
     z,
     radio: radioBase * tipo.tamano,
+    alcance: tipo.alcance + (arma?.alcanceExtra ?? 0),
+    contaminacion: tipo.contaminacion * (arma?.multiplicadorContaminacion ?? 1),
     exposicion: 0,
     // Segundos desde la última gota que le pegó.
     sinAgua: Infinity,
@@ -91,7 +95,7 @@ export function separarEnemigos(enemigos) {
 function avanzarHaciaElPozo(enemigo, radioPozo, dt) {
   const distancia = Math.hypot(enemigo.x, enemigo.z);
   // Se detiene cuando el brocal queda a su alcance de ataque.
-  const parada = radioPozo + enemigo.radio + enemigo.tipo.alcance;
+  const parada = radioPozo + enemigo.radio + enemigo.alcance;
   const paso = Math.min(enemigo.tipo.velocidad * dt, distancia - parada);
   if (paso > 0) {
     enemigo.x -= (enemigo.x / distancia) * paso;
@@ -109,7 +113,7 @@ function golpearElPozo(enemigo, dt) {
   enemigo.tiempoDesdeGolpe += dt;
   let contaminacion = 0;
   while (enemigo.espera <= 0) {
-    contaminacion += enemigo.tipo.contaminacion;
+    contaminacion += enemigo.contaminacion;
     enemigo.espera += enemigo.tipo.intervaloGolpe;
     enemigo.tiempoDesdeGolpe = enemigo.tipo.intervaloGolpe - enemigo.espera;
   }

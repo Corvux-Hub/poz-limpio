@@ -31,6 +31,44 @@ const materialFondo = new THREE.MeshBasicMaterial({
 });
 const materialRelleno = new THREE.MeshBasicMaterial({ color: BARRA.relleno, depthTest: false });
 
+// Arma improvisada (de armas.json) sostenida con las manos frente al cuerpo, apuntando hacia
+// adelante (+x local) y un poco hacia abajo. En cada golpe baja un poco más.
+const ARMA = { alturaManos: 1.0, agarre: 0.25, inclinacion: 0.25, golpe: 0.5, segmentos: 8 };
+
+function crearArma(arma) {
+  const grupo = new THREE.Group();
+  const piezas = [];
+  const palo = new THREE.Mesh(
+    new THREE.CylinderGeometry(arma.grosor, arma.grosor, arma.largo, ARMA.segmentos),
+    new THREE.MeshStandardMaterial({ color: arma.color, roughness: 0.8 }),
+  );
+  // El cilindro nace sobre +y; se acuesta hacia +x con un tramo detrás de las manos.
+  palo.rotation.z = -Math.PI / 2;
+  palo.position.x = arma.largo / 2 - ARMA.agarre;
+  piezas.push(palo);
+  if (arma.cabeza) {
+    const cabeza = new THREE.Mesh(
+      new THREE.BoxGeometry(arma.cabeza.largo, arma.grosor * 3, arma.cabeza.ancho),
+      new THREE.MeshStandardMaterial({ color: arma.cabeza.color, roughness: 0.9 }),
+    );
+    cabeza.position.x = arma.largo - ARMA.agarre;
+    piezas.push(cabeza);
+  }
+  for (const pieza of piezas) {
+    pieza.castShadow = true;
+    grupo.add(pieza);
+  }
+  return {
+    grupo,
+    destruir() {
+      for (const pieza of piezas) {
+        pieza.geometry.dispose();
+        pieza.material.dispose();
+      }
+    },
+  };
+}
+
 function crearBarra() {
   const barra = new THREE.Group();
   const fondo = new THREE.Mesh(geometriaFondo, materialFondo);
@@ -45,7 +83,7 @@ function crearBarra() {
 }
 
 // `orientacionCamara` es el quaternion de la cámara fija, para que la barra le dé la cara.
-export function crearEnemigoVisual({ tipo, radio }, orientacionCamara) {
+export function crearEnemigoVisual({ tipo, radio, arma }, orientacionCamara) {
   const colorBase = new THREE.Color(tipo.colorBase);
   const colorLimpio = new THREE.Color(tipo.colorLimpio);
   const material = new THREE.MeshStandardMaterial({ color: colorBase, roughness: 0.9 });
@@ -64,21 +102,44 @@ export function crearEnemigoVisual({ tipo, radio }, orientacionCamara) {
     pieza.castShadow = true;
     pieza.receiveShadow = true;
   }
+  const armaVisual = arma ? crearArma(arma) : null;
+  if (armaVisual) {
+    armaVisual.grupo.position.set(radio * 0.9, ARMA.alturaManos, radio * 0.5);
+    figura.add(armaVisual.grupo);
+  }
+
   const { barra, relleno } = crearBarra();
   barra.quaternion.copy(orientacionCamara);
+  // `movil` sigue al enemigo; `grupo` queda fijo en el origen para que el arma soltada se quede donde cayó.
+  const movil = new THREE.Group();
+  movil.add(figura, barra);
   const grupo = new THREE.Group();
-  grupo.add(figura, barra);
+  grupo.add(movil);
 
   let fase = 0;
   let mojado = 0;
   // Segundos desde que quedó limpio; null mientras siga sucio.
   let tiempoLimpio = null;
 
+  // Al quedar limpio suelta el arma: queda tirada en el suelo frente a donde estaba.
+  function soltarArma(enemigo) {
+    const { grupo: armaGrupo } = armaVisual;
+    figura.remove(armaGrupo);
+    armaGrupo.position.set(enemigo.x, arma.grosor, enemigo.z);
+    armaGrupo.rotation.set(0, figura.rotation.y, 0);
+    armaGrupo.translateX(radio);
+    grupo.add(armaGrupo);
+  }
+
   return {
     grupo,
     // `progreso` va de 0 (sucio) a 1 (limpio).
     sincronizar(enemigo, recibeAgua, progreso, dt) {
-      grupo.position.set(enemigo.x, 0, enemigo.z);
+      movil.position.set(enemigo.x, 0, enemigo.z);
+      const distancia = Math.hypot(enemigo.x, enemigo.z) || 1;
+      // Mira al pozo; al retirarse le da la espalda. El ángulo va de +x hacia +z.
+      const sentido = enemigo.estado === ESTADOS.RETIRANDOSE ? 1 : -1;
+      figura.rotation.y = -Math.atan2(sentido * enemigo.z, sentido * enemigo.x);
 
       const caminando = enemigo.estado === ESTADOS.AVANZANDO || enemigo.estado === ESTADOS.RETIRANDOSE;
       if (caminando) fase += PASO.frecuencia * dt;
@@ -87,10 +148,10 @@ export function crearEnemigoVisual({ tipo, radio }, orientacionCamara) {
       // Se lanza hacia el pozo y regresa justo después de cada golpe.
       const avanceGolpe = enemigo.tiempoDesdeGolpe / EMBESTIDA.duracion;
       const golpeando = enemigo.estado === ESTADOS.EN_POZO && avanceGolpe < 1;
-      const embestida = golpeando ? Math.sin(Math.PI * avanceGolpe) * EMBESTIDA.distancia : 0;
-      const distancia = Math.hypot(enemigo.x, enemigo.z) || 1;
-      figura.position.x = (-enemigo.x / distancia) * embestida;
-      figura.position.z = (-enemigo.z / distancia) * embestida;
+      const fuerzaGolpe = golpeando ? Math.sin(Math.PI * avanceGolpe) : 0;
+      figura.position.x = (-enemigo.x / distancia) * fuerzaGolpe * EMBESTIDA.distancia;
+      figura.position.z = (-enemigo.z / distancia) * fuerzaGolpe * EMBESTIDA.distancia;
+      if (armaVisual && tiempoLimpio === null) armaVisual.grupo.rotation.z = -(ARMA.inclinacion + ARMA.golpe * fuerzaGolpe);
 
       material.color.lerpColors(colorBase, colorLimpio, progreso);
 
@@ -104,6 +165,7 @@ export function crearEnemigoVisual({ tipo, radio }, orientacionCamara) {
         return;
       }
 
+      if (tiempoLimpio === null && armaVisual) soltarArma(enemigo);
       tiempoLimpio = tiempoLimpio === null ? 0 : tiempoLimpio + dt;
       const avance = Math.min(tiempoLimpio / DESTELLO.duracion, 1);
       material.emissive.copy(BLANCO).multiplyScalar(BRILLO_LIMPIO + (1 - BRILLO_LIMPIO) * (1 - avance));
@@ -113,6 +175,7 @@ export function crearEnemigoVisual({ tipo, radio }, orientacionCamara) {
       cuerpo.geometry.dispose();
       cabeza.geometry.dispose();
       material.dispose();
+      armaVisual?.destruir();
     },
   };
 }

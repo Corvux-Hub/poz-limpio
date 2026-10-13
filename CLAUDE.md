@@ -44,6 +44,13 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Al quedar limpios se detienen un momento (`enemigos.pausaAlLimpiarse`), dejan de ser objetivo del chorro y se retiran hasta salir del mapa.
 - Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
 - Los sucios no se enciman: `separarEnemigos` los aparta, y el que ya golpea el pozo no se deja empujar (los demás hacen fila o lo rodean).
+- Miran al pozo mientras avanzan y golpean; al retirarse le dan la espalda. El tamaño los hace más anchos, no más altos.
+
+## Armas improvisadas
+
+- Las define `src/data/armas.json`: `alcanceExtra` (se suma al `alcance` del tipo, así golpean desde más lejos), `multiplicadorContaminacion` (por golpe) y su aspecto (`largo`, `grosor`, `color` y `cabeza` opcional, como la de la escoba).
+- Un tipo puede traer `arma` por defecto en `enemies.json`; un grupo de `waves.json` puede darle otra con `arma` (o quitarla con `"ninguna"`).
+- La sostienen frente al cuerpo apuntando al pozo y la bajan en cada golpe. Al quedar limpios la sueltan y se queda tirada en el suelo.
 
 ## Oleadas
 
@@ -51,6 +58,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
   - `tipo`: clave de `enemies.json`.
   - `cantidad` e `intervalo` (segundos entre uno y otro).
   - `retraso` opcional: segundos desde que empieza la oleada hasta que sale el primero del grupo.
+  - `arma` opcional: clave de `armas.json` (o `"ninguna"`), en lugar del arma del tipo.
   - `aparicion`: `arriba`, `abajo`, `izquierda`, `derecha` o `cualquiera`, o una lista de esas para elegir al azar. Arriba es el borde lejano de la cámara.
 - Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio.
 - Ciclo: `descanso` (cuenta regresiva) → `en_curso` → `superada` (`oleadas.celebracion` segundos) → `esperando` (menú de mejoras abierto) → `descanso` otra vez. La primera oleada espera `oleadas.esperaInicial` y las demás `oleadas.descanso`.
@@ -66,14 +74,14 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
 - Cada enemigo acumula `exposicion` según el agua que recibe: cada gota que le pega suma 1/`cadencia` segundos. Así un chorro continuo limpia al mismo ritmo a cualquier FPS (nunca contar "cuadros tocados").
 - Si deja de recibir agua más de `limpieza.gracia` segundos, la exposición se **regenera lentamente** (`limpieza.regeneracion`), para que no se pueda limpiar "a golpecitos".
 - Cuando `exposicion >= tiempo_de_limpieza`, el enemigo queda limpio, se detiene y se retira.
-- Referencia con el chorro básico (potencia 1):
+- Referencia con el chorro básico (potencia 1), revisada en el hito 7 para que los pesados no tarden tanto:
 
-| Enemigo | Suciedad | Tamaño | Tiempo |
-|---|---|---|---|
-| Peatón ligero | 3 | ×1.0 | 3 s |
-| Oficinista sucio | 6 | ×1.0 | 6 s |
-| Obrero corpulento con palo | 8 | ×1.5 | 12 s |
-| Jefe de basurero | 10 | ×1.5 | 15 s |
+| Enemigo | Suciedad | Tamaño | Tiempo | Arma | Recompensa |
+|---|---|---|---|---|---|
+| Peatón ligero | 3 | ×1.0 | 3 s | — | 10 |
+| Oficinista sucio | 5 | ×1.0 | 5 s | — | 18 |
+| Obrero corpulento con palo | 6 | ×1.5 | 9 s | palo | 30 |
+| Jefe de basurero | 8 | ×1.5 | 12 s | tubo | 60 |
 
 ## Avatar
 
@@ -109,7 +117,8 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
 
 Nada de números mágicos en el código. Todo el balance vive en JSON dentro de `src/data/`:
 
-- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, recompensa, color base y color limpio.
+- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, recompensa, arma por defecto, color base y color limpio.
+- `armas.json`: alcance extra, multiplicador de contaminación y aspecto de cada arma improvisada.
 - `waves.json`: composición, cantidad, ritmo y puntos de aparición de cada oleada.
 - `upgrades.json`: efectos, niveles y costos.
 - `config.json`: presión, regeneración de exposición, tiempos entre oleadas y demás parámetros globales.

@@ -10,5 +10,43 @@
     "recompensa": 10,
     "colorBase": "#5a4738",
     "colorLimpio": "#e3ebf0"
+  },
+  "oficinista": {
+    "nombre": "Oficinista sucio",
+    "suciedad": 5,
+    "tamano": 1,
+    "velocidad": 1,
+    "alcance": 0.9,
+    "contaminacion": 6,
+    "intervaloGolpe": 1.5,
+    "recompensa": 18,
+    "colorBase": "#3e4446",
+    "colorLimpio": "#e6ecf2"
+  },
+  "obrero": {
+    "nombre": "Obrero corpulento con palo",
+    "suciedad": 6,
+    "tamano": 1.5,
+    "velocidad": 0.85,
+    "alcance": 0.9,
+    "contaminacion": 7,
+    "intervaloGolpe": 2,
+    "recompensa": 30,
+    "arma": "palo",
+    "colorBase": "#6a5030",
+    "colorLimpio": "#eef0ea"
+  },
+  "jefe": {
+    "nombre": "Jefe de basurero",
+    "suciedad": 8,
+    "tamano": 1.5,
+    "velocidad": 0.7,
+    "alcance": 0.9,
+    "contaminacion": 9,
+    "intervaloGolpe": 2,
+    "recompensa": 60,
+    "arma": "tubo",
+    "colorBase": "#3a4529",
+    "colorLimpio": "#f0f4ec"
   }
 }

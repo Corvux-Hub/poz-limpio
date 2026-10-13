@@ -112,3 +112,23 @@ test('después de las oleadas definidas repite la última escalada', () => {
   assert.equal(cuarta.grupos[0].intervalo, 0.6);
   assert.equal(cuarta.grupos[1].retraso, 1);
 });
+
+test('el pedido lleva el arma del grupo solo si el grupo la define', () => {
+  const datos = {
+    oleadas: [
+      {
+        grupos: [
+          { tipo: 'peaton', cantidad: 1, intervalo: 1, aparicion: 'arriba', arma: 'escoba' },
+          { tipo: 'obrero', cantidad: 1, intervalo: 1, aparicion: 'abajo' },
+        ],
+      },
+    ],
+    escalado: DATOS.escalado,
+  };
+  const oleadas = crearOleadas(0);
+  const pedidos = actualizarOleadas(oleadas, datos, { quedanSucios: true, celebracion: CELEBRACION }, azar, 0.01);
+  assert.deepEqual(pedidos, [
+    { tipo: 'peaton', zona: 'arriba', arma: 'escoba' },
+    { tipo: 'obrero', zona: 'abajo' },
+  ]);
+});

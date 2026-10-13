@@ -55,7 +55,7 @@ export function continuarOleadas(oleadas, descanso) {
   oleadas.espera = descanso;
 }
 
-// Avanza dt segundos y devuelve los enemigos que deben aparecer en este paso: [{ tipo, zona }].
+// Avanza dt segundos y devuelve los enemigos que deben aparecer en este paso: [{ tipo, zona, arma? }].
 // `quedanSucios` indica si sigue en el mapa algún enemigo sin limpiar.
 export function actualizarOleadas(oleadas, datos, { quedanSucios, celebracion }, aleatorio, dt) {
   const pedidos = [];
@@ -79,7 +79,10 @@ export function actualizarOleadas(oleadas, datos, { quedanSucios, celebracion },
   for (const grupo of oleadas.grupos) {
     grupo.espera -= tiempo;
     while (grupo.espera <= 0 && grupo.emitidos < grupo.cantidad) {
-      pedidos.push({ tipo: grupo.tipo, zona: elegirZona(grupo.aparicion, aleatorio) });
+      const pedido = { tipo: grupo.tipo, zona: elegirZona(grupo.aparicion, aleatorio) };
+      // Un grupo puede cambiar el arma que el tipo trae por defecto ("ninguna" para quitarla).
+      if (grupo.arma) pedido.arma = grupo.arma;
+      pedidos.push(pedido);
       grupo.emitidos++;
       grupo.espera += grupo.intervalo;
     }

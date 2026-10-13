@@ -1,0 +1,27 @@
+{
+  "palo": {
+    "nombre": "Palo",
+    "alcanceExtra": 0.8,
+    "multiplicadorContaminacion": 1.3,
+    "largo": 1.2,
+    "grosor": 0.035,
+    "color": "#6b4a2b"
+  },
+  "escoba": {
+    "nombre": "Escoba",
+    "alcanceExtra": 0.9,
+    "multiplicadorContaminacion": 1.2,
+    "largo": 1.3,
+    "grosor": 0.025,
+    "color": "#8a6d45",
+    "cabeza": { "largo": 0.12, "ancho": 0.3, "color": "#4f4430" }
+  },
+  "tubo": {
+    "nombre": "Tubo",
+    "alcanceExtra": 1.1,
+    "multiplicadorContaminacion": 1.6,
+    "largo": 1.4,
+    "grosor": 0.045,
+    "color": "#7c8187"
+  }
+}

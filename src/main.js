@@ -3,6 +3,7 @@ import config from './data/config.json';
 import tiposDeEnemigo from './data/enemies.json';
 import datosOleadas from './data/waves.json';
 import catalogoMejoras from './data/upgrades.json';
+import armas from './data/armas.json';
 import { crearEscena } from './core/escena.js';
 import { ajustarCamara, crearCamara } from './core/camara.js';
 import { crearInput } from './core/input.js';
@@ -146,6 +147,14 @@ function redimensionar() {
 window.addEventListener('resize', redimensionar);
 redimensionar();
 
+// El arma del grupo de la oleada manda sobre la del tipo; "ninguna" la quita.
+function armaDe(pedido, tipo) {
+  const id = pedido.arma ?? tipo.arma;
+  if (!id || id === 'ninguna') return null;
+  if (!armas[id]) throw new Error(`Arma desconocida: "${id}"`);
+  return armas[id];
+}
+
 // Hace aparecer en el borde los enemigos que pide la oleada.
 function actualizarOleada(dt) {
   const entorno = { quedanSucios: partida.enemigos.some(esObjetivo), celebracion: config.oleadas.celebracion };
@@ -153,7 +162,7 @@ function actualizarOleada(dt) {
     const tipo = tiposDeEnemigo[pedido.tipo];
     if (!tipo) throw new Error(`Tipo de enemigo desconocido en waves.json: "${pedido.tipo}"`);
     const punto = puntoEnZona(config.mapa, pedido.zona, Math.random);
-    partida.enemigos.push(crearEnemigo(siguienteId++, tipo, punto, config.enemigos.radioBase));
+    partida.enemigos.push(crearEnemigo(siguienteId++, tipo, punto, config.enemigos.radioBase, armaDe(pedido, tipo)));
   }
 }
 

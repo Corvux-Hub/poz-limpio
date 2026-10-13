@@ -221,3 +221,21 @@ test('los limpios no empujan ni son empujados', () => {
   assert.equal(sucio.x, 5);
   assert.equal(limpio.x, 5.1);
 });
+
+test('un arma lo hace golpear desde más lejos y contaminar más', () => {
+  const PALO = { alcanceExtra: 1, multiplicadorContaminacion: 1.5 };
+  const armado = crearEnemigo(1, PEATON, { x: 10, z: 0 }, 0.4, PALO);
+  assert.equal(armado.alcance, 1.5);
+  assert.equal(armado.contaminacion, 7.5);
+  simular(armado, 10, 0.01, false);
+  // Brocal (1) + su radio (0.4) + alcance con el palo (1.5).
+  assert.ok(cerca(armado.x, 2.9));
+  assert.equal(simular(armado, 1.6, 0.01, false), 7.5);
+});
+
+test('sin arma usa el alcance y la contaminación de su tipo', () => {
+  const enemigo = crearEnemigo(1, PEATON, { x: 10, z: 0 }, 0.4);
+  assert.equal(enemigo.arma, null);
+  assert.equal(enemigo.alcance, PEATON.alcance);
+  assert.equal(enemigo.contaminacion, PEATON.contaminacion);
+});
