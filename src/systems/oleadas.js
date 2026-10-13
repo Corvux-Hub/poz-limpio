@@ -1,8 +1,14 @@
 // Lógica pura de las oleadas: cuándo empieza cada una, qué enemigos pide y cuándo termina.
-// Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio en el mapa;
-// entonces hay un descanso antes de la siguiente.
+// Ciclo: DESCANSO (cuenta regresiva) → EN_CURSO → SUPERADA (un momento para celebrar)
+// → ESPERANDO (el jugador está en el menú de mejoras) → continuarOleadas() → DESCANSO.
+// Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio en el mapa.
 
-export const FASES = { DESCANSO: 'descanso', EN_CURSO: 'en_curso' };
+export const FASES = {
+  DESCANSO: 'descanso',
+  EN_CURSO: 'en_curso',
+  SUPERADA: 'superada',
+  ESPERANDO: 'esperando',
+};
 
 // Definición de la oleada `numero` (desde 1). Más allá de las definidas en waves.json,
 // repite la última con más enemigos y saliendo más seguido.
@@ -42,11 +48,25 @@ function iniciar(oleadas, datos) {
   }));
 }
 
+// Tras el menú de mejoras, arranca la cuenta regresiva de la siguiente oleada.
+export function continuarOleadas(oleadas, descanso) {
+  if (oleadas.fase !== FASES.ESPERANDO) return;
+  oleadas.fase = FASES.DESCANSO;
+  oleadas.espera = descanso;
+}
+
 // Avanza dt segundos y devuelve los enemigos que deben aparecer en este paso: [{ tipo, zona }].
 // `quedanSucios` indica si sigue en el mapa algún enemigo sin limpiar.
-export function actualizarOleadas(oleadas, datos, { quedanSucios, descanso }, aleatorio, dt) {
+export function actualizarOleadas(oleadas, datos, { quedanSucios, celebracion }, aleatorio, dt) {
   const pedidos = [];
   let tiempo = dt;
+
+  if (oleadas.fase === FASES.ESPERANDO) return pedidos;
+  if (oleadas.fase === FASES.SUPERADA) {
+    oleadas.espera -= tiempo;
+    if (oleadas.espera <= 0) oleadas.fase = FASES.ESPERANDO;
+    return pedidos;
+  }
 
   if (oleadas.fase === FASES.DESCANSO) {
     oleadas.espera -= tiempo;
@@ -67,8 +87,8 @@ export function actualizarOleadas(oleadas, datos, { quedanSucios, descanso }, al
 
   if (pedidos.length === 0 && porAparecer(oleadas) === 0 && !quedanSucios) {
     oleadas.numero++;
-    oleadas.fase = FASES.DESCANSO;
-    oleadas.espera = descanso;
+    oleadas.fase = FASES.SUPERADA;
+    oleadas.espera = celebracion;
     oleadas.grupos = [];
   }
   return pedidos;

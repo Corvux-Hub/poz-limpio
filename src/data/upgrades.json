@@ -1,0 +1,50 @@
+{
+  "potencia": {
+    "nombre": "Potencia",
+    "descripcion": "El chorro limpia más rápido.",
+    "parametro": "chorro.potencia",
+    "niveles": [
+      { "valor": 1.25, "costo": 30 },
+      { "valor": 1.5, "costo": 60 },
+      { "valor": 2, "costo": 110 }
+    ]
+  },
+  "alcance": {
+    "nombre": "Alcance",
+    "descripcion": "El agua llega más lejos.",
+    "parametro": "chorro.alcance",
+    "niveles": [
+      { "valor": 8.5, "costo": 25 },
+      { "valor": 10, "costo": 50 },
+      { "valor": 11.5, "costo": 90 }
+    ]
+  },
+  "ancho": {
+    "nombre": "Ancho del chorro",
+    "descripcion": "Un chorro más grueso es más fácil de atinar.",
+    "parametro": "chorro.ancho",
+    "niveles": [
+      { "valor": 0.18, "costo": 20 },
+      { "valor": 0.25, "costo": 45 },
+      { "valor": 0.33, "costo": 80 }
+    ]
+  },
+  "ampliacion": {
+    "nombre": "Ampliar el pozo",
+    "descripcion": "Con más agua, cada golpe lo ensucia menos.",
+    "parametro": "pozo.factorContaminacion",
+    "niveles": [
+      { "valor": 0.8, "costo": 40 },
+      { "valor": 0.65, "costo": 80 },
+      { "valor": 0.5, "costo": 130 }
+    ]
+  },
+  "purificacion": {
+    "nombre": "Purificar el pozo",
+    "descripcion": "Baja la contaminación. Se puede comprar varias veces y cada vez cuesta más.",
+    "accion": "Purificar",
+    "purifica": 25,
+    "costo": 30,
+    "incrementoCosto": 15
+  }
+}

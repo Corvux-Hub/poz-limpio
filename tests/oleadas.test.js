@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FASES, actualizarOleadas, crearOleadas, definicionDeOleada, porAparecer } from '../src/systems/oleadas.js';
+import {
+  FASES,
+  actualizarOleadas,
+  continuarOleadas,
+  crearOleadas,
+  definicionDeOleada,
+  porAparecer,
+} from '../src/systems/oleadas.js';
 
 const DATOS = {
   oleadas: [
@@ -14,6 +21,7 @@ const DATOS = {
   ],
   escalado: { cantidad: 1.5, intervalo: 0.5, intervaloMinimo: 0.6 },
 };
+const CELEBRACION = 1.5;
 const DESCANSO = 4;
 const azar = () => 0.7;
 
@@ -21,7 +29,7 @@ const azar = () => 0.7;
 function simular(oleadas, segundos, dt, quedanSucios = false) {
   const pedidos = [];
   for (let i = 0; i < Math.round(segundos / dt); i++) {
-    pedidos.push(...actualizarOleadas(oleadas, DATOS, { quedanSucios, descanso: DESCANSO }, azar, dt));
+    pedidos.push(...actualizarOleadas(oleadas, DATOS, { quedanSucios, celebracion: CELEBRACION }, azar, dt));
   }
   return pedidos;
 }
@@ -54,17 +62,36 @@ test('no termina mientras quede algún enemigo sucio', () => {
   assert.equal(porAparecer(oleadas), 0);
   assert.equal(oleadas.fase, FASES.EN_CURSO);
   simular(oleadas, 0.01, 0.01, false);
-  assert.equal(oleadas.fase, FASES.DESCANSO);
+  assert.equal(oleadas.fase, FASES.SUPERADA);
   assert.equal(oleadas.numero, 2);
 });
 
-test('tras el descanso arranca la siguiente oleada', () => {
+test('tras celebrar espera al menú de mejoras y no avanza sola', () => {
   const oleadas = crearOleadas(0);
   simular(oleadas, 5, 0.01, true);
-  simular(oleadas, 0.01, 0.01, false);
+  simular(oleadas, CELEBRACION + 0.05, 0.01, false);
+  assert.equal(oleadas.fase, FASES.ESPERANDO);
+  assert.equal(simular(oleadas, 30, 0.1, false).length, 0);
+  assert.equal(oleadas.fase, FASES.ESPERANDO);
+});
+
+test('al continuar hay cuenta regresiva y luego arranca la siguiente oleada', () => {
+  const oleadas = crearOleadas(0);
+  simular(oleadas, 5, 0.01, true);
+  simular(oleadas, CELEBRACION + 0.05, 0.01, false);
+  continuarOleadas(oleadas, DESCANSO);
+  assert.equal(oleadas.fase, FASES.DESCANSO);
   simular(oleadas, DESCANSO - 0.1, 0.01, false);
   assert.equal(oleadas.fase, FASES.DESCANSO);
   simular(oleadas, 0.2, 0.01, true);
+  assert.equal(oleadas.fase, FASES.EN_CURSO);
+  assert.equal(oleadas.numero, 2);
+});
+
+test('continuarOleadas no hace nada fuera del menú', () => {
+  const oleadas = crearOleadas(0);
+  simular(oleadas, 0.5, 0.01, true);
+  continuarOleadas(oleadas, DESCANSO);
   assert.equal(oleadas.fase, FASES.EN_CURSO);
 });
 

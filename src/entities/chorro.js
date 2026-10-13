@@ -56,5 +56,10 @@ export function crearChorroVisual({ velocidad, alcance, cadencia, ancho }, altur
       malla.count = visibles;
       malla.instanceMatrix.needsUpdate = true;
     },
+    destruir() {
+      malla.geometry.dispose();
+      malla.material.dispose();
+      malla.dispose();
+    },
   };
 }

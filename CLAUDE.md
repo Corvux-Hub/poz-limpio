@@ -39,6 +39,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Aparecen en el borde del mapa y caminan en línea recta hacia el pozo.
 - Se detienen cuando el brocal queda a su `alcance` de ataque (en `enemies.json`), que los deja por fuera del avatar.
 - Su color va de `colorBase` a `colorLimpio` según su progreso de limpieza; mientras reciben agua brillan en azul.
+- En cuanto empiezan a recibir agua muestran una barra de limpieza sobre la cabeza.
+- Al quedar limpios: destello blanco con un pequeño salto de tamaño, un "+N" flotante con su `recompensa` de agua limpia, y un brillo blanco suave mientras se retiran.
 - Al quedar limpios se detienen un momento (`enemigos.pausaAlLimpiarse`), dejan de ser objetivo del chorro y se retiran hasta salir del mapa.
 - Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
 - Los sucios no se enciman: `separarEnemigos` los aparta, y el que ya golpea el pozo no se deja empujar (los demás hacen fila o lo rodean).
@@ -50,7 +52,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
   - `cantidad` e `intervalo` (segundos entre uno y otro).
   - `retraso` opcional: segundos desde que empieza la oleada hasta que sale el primero del grupo.
   - `aparicion`: `arriba`, `abajo`, `izquierda`, `derecha` o `cualquiera`, o una lista de esas para elegir al azar. Arriba es el borde lejano de la cámara.
-- Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio. Luego hay un descanso (`oleadas.descanso` en `config.json`) con cuenta regresiva; la primera espera `oleadas.esperaInicial`.
+- Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio.
+- Ciclo: `descanso` (cuenta regresiva) → `en_curso` → `superada` (`oleadas.celebracion` segundos) → `esperando` (menú de mejoras abierto) → `descanso` otra vez. La primera oleada espera `oleadas.esperaInicial` y las demás `oleadas.descanso`.
 - Después de las oleadas definidas se repite la última escalada: `escalado.cantidad` multiplica la cantidad e `escalado.intervalo` el intervalo por cada oleada extra, sin bajar de `escalado.intervaloMinimo`.
 - La lógica vive en `src/systems/oleadas.js`.
 
@@ -89,15 +92,24 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
   - potencia del chorro
   - alcance
   - ancho del chorro
-  - reserva y recarga de presión
-  - purificación (baja la contaminación) y ampliación del pozo
+  - reserva y recarga de presión (hito 8)
+  - purificación (baja la contaminación) y ampliación del pozo (cada golpe ensucia menos)
   - segunda manguera (mejora tardía)
+
+## Agua limpia y menú de mejoras
+
+- Cada ciudadano limpiado da su `recompensa` (en `enemies.json`) de **agua limpia**, la moneda de las mejoras. Se muestra en el HUD.
+- Al superar una oleada se abre el menú de mejoras con el juego detenido; "Empezar oleada N" lo cierra y arranca la cuenta regresiva.
+- `upgrades.json` tiene dos clases de mejora:
+  - Por niveles: `parametro` (`seccion.campo` de `config.json`, p. ej. `chorro.potencia`) y `niveles`, una lista de `{ valor, costo }`. El nivel 0 es el valor de `config.json`.
+  - Consumibles: `costo`, `incrementoCosto` (cuánto sube con cada compra) y su efecto; por ahora solo `purifica` (puntos de contaminación que quita). `accion` cambia el texto del botón.
+- La lógica vive en `src/systems/mejoras.js`; `aplicarMejoras` da los parámetros vigentes de la partida.
 
 ## Datos primero
 
 Nada de números mágicos en el código. Todo el balance vive en JSON dentro de `src/data/`:
 
-- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, color base y color limpio.
+- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, recompensa, color base y color limpio.
 - `waves.json`: composición, cantidad, ritmo y puntos de aparición de cada oleada.
 - `upgrades.json`: efectos, niveles y costos.
 - `config.json`: presión, regeneración de exposición, tiempos entre oleadas y demás parámetros globales.

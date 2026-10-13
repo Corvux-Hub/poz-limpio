@@ -1,4 +1,6 @@
-// HUD en HTML sobre el canvas: contaminación del pozo, oleada, avisos y pantallas de pausa y derrota.
+// HUD en HTML sobre el canvas: contaminación del pozo, agua limpia, oleada, avisos
+// y pantallas de pausa y derrota.
+import { FASES } from '../systems/oleadas.js';
 
 // Color de la barra: azul con el pozo limpio, café cuando está contaminado.
 const COLOR_LIMPIO = [74, 163, 214];
@@ -43,6 +45,7 @@ export function crearHud(contenedor) {
     <div class="hud-contaminacion">
       <div class="hud-etiqueta"><span>Contaminación del pozo</span><span class="hud-valor">0 %</span></div>
       <div class="hud-barra"><div class="hud-relleno"></div></div>
+      <div class="hud-agua">Agua limpia: <span class="hud-agua-valor">0</span></div>
     </div>
     <div class="hud-oleada">
       <div class="hud-oleada-numero"></div>
@@ -72,6 +75,7 @@ export function crearHud(contenedor) {
   const valor = raiz.querySelector('.hud-valor');
   const barra = raiz.querySelector('.hud-barra');
   const relleno = raiz.querySelector('.hud-relleno');
+  const agua = raiz.querySelector('.hud-agua-valor');
   const numeroOleada = raiz.querySelector('.hud-oleada-numero');
   const quedan = raiz.querySelector('.hud-oleada-quedan');
   const aviso = raiz.querySelector('.hud-aviso');
@@ -98,14 +102,25 @@ export function crearHud(contenedor) {
       relleno.style.backgroundColor = mezclar(COLOR_LIMPIO, COLOR_SUCIO, porcentaje / 100);
     },
 
-    // En descanso muestra la cuenta regresiva de la siguiente; en curso, cuántos sucios quedan.
-    actualizarOleada({ numero, enDescanso, segundosParaEmpezar, sucios }) {
-      escribir(numeroOleada, `Oleada ${numero}`);
-      escribir(quedan, enDescanso ? 'Preparándose' : `Quedan ${sucios}`);
-      aviso.hidden = !enDescanso;
-      if (enDescanso) {
-        escribir(avisoTitulo, numero === 1 ? 'Defiende el pozo' : `Oleada ${numero - 1} superada`);
-        escribir(avisoDetalle, `La oleada ${numero} empieza en ${Math.ceil(segundosParaEmpezar)}`);
+    actualizarAgua(cantidad) {
+      escribir(agua, String(cantidad));
+    },
+
+    // `numero` es la oleada en curso o la siguiente; tras superar una ya apunta a la que viene.
+    actualizarOleada({ numero, fase, segundos, sucios }) {
+      const superada = fase === FASES.SUPERADA || fase === FASES.ESPERANDO;
+      escribir(numeroOleada, `Oleada ${superada ? numero - 1 : numero}`);
+      if (fase === FASES.EN_CURSO) escribir(quedan, `Quedan ${sucios}`);
+      else escribir(quedan, superada ? 'Superada' : 'Preparándose');
+
+      // Con el menú de mejoras abierto (ESPERANDO) el aviso se oculta: el menú ya lo dice.
+      aviso.hidden = fase === FASES.EN_CURSO || fase === FASES.ESPERANDO;
+      if (superada) {
+        escribir(avisoTitulo, `Oleada ${numero - 1} superada`);
+        escribir(avisoDetalle, '');
+      } else if (fase === FASES.DESCANSO) {
+        escribir(avisoTitulo, numero === 1 ? 'Defiende el pozo' : `Oleada ${numero}`);
+        escribir(avisoDetalle, `Empieza en ${Math.ceil(segundos)}`);
       }
     },
 

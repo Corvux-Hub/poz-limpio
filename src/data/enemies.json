@@ -7,6 +7,7 @@
     "alcance": 0.9,
     "contaminacion": 5,
     "intervaloGolpe": 1.5,
+    "recompensa": 10,
     "colorBase": "#5a4738",
     "colorLimpio": "#e3ebf0"
   }

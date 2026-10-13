@@ -12,3 +12,7 @@ export function contaminar(contaminacion, cantidad) {
 export function estaPerdido(contaminacion) {
   return contaminacion.porcentaje >= MAXIMA;
 }
+
+export function purificar(contaminacion, cantidad) {
+  contaminacion.porcentaje = Math.max(0, contaminacion.porcentaje - cantidad);
+}
