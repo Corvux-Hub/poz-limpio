@@ -196,7 +196,7 @@ function cuadro(tiempo) {
 
   // Render.
   escenario.actualizar(dtVisual);
-  jugador.sincronizar(partida.apuntado);
+  jugador.sincronizar(partida.apuntado, jugando && input.disparando(), dtVisual);
   pozo.sincronizar(partida.contaminacion.porcentaje, dtVisual);
   chorroVisual.sincronizar(partida.chorro);
   sincronizarEnemigos(dtVisual);
