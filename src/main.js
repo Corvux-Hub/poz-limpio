@@ -21,7 +21,7 @@ import { crearPozo } from './entities/pozo.js';
 import { crearJugador } from './entities/jugador.js';
 import { crearChorroVisual } from './entities/chorro.js';
 import { crearEnemigoVisual } from './entities/enemigo.js';
-import { crearSalpicaduras } from './entities/salpicaduras.js';
+import { crearEfectos } from './entities/efectos.js';
 import { crearHud } from './ui/hud.js';
 import { crearMenuMejoras } from './ui/mejoras.js';
 import { crearEtiquetasFlotantes } from './ui/etiquetas.js';
@@ -34,7 +34,7 @@ import { estaSinPresion } from './systems/presion.js';
 const datos = { config, tipos: tiposDeEnemigo, armas, oleadas: datosOleadas, mejoras: catalogoMejoras };
 // Altura (m) desde la que sube el "+N" de agua limpia al limpiar a alguien.
 const ALTURA_RECOMPENSA = 2.3;
-// Contaminación (%) de un golpe que suena con toda su fuerza (el jefe con tubo pega 12.8).
+// Contaminación (%) de un golpe que suena y salpica con toda su fuerza (el jefe con tubo pega 12.8).
 const GOLPE_FUERTE = 12;
 // Últimos segundos de la cuenta regresiva que suenan con un tic.
 const TICS = 3;
@@ -52,8 +52,8 @@ const escenario = crearEscenario({
 });
 const pozo = crearPozo(config.pozo);
 const jugador = crearJugador(pozo, config.avatar);
-const salpicaduras = crearSalpicaduras();
-escena.add(escenario.grupo, pozo.grupo, jugador.grupo, salpicaduras.grupo);
+const efectos = crearEfectos(pozo);
+escena.add(escenario.grupo, pozo.grupo, jugador.grupo, efectos.grupo);
 // En orden de apilado: las etiquetas quedan debajo del HUD y de las pantallas.
 const etiquetas = crearEtiquetasFlotantes(document.body);
 const hud = crearHud(document.body);
@@ -85,7 +85,7 @@ function nuevaPartida() {
   anterior = { fase: partida.oleadas.fase, segundos: null, sinPresion: false };
   rehacerChorroVisual();
   etiquetas.limpiar();
-  salpicaduras.limpiar();
+  efectos.limpiar();
 }
 
 // El clic en "Empezar" es el gesto que el navegador pide para dejar sonar el audio.
@@ -178,7 +178,7 @@ function jugar(dt) {
 
 function sincronizarHud() {
   const { oleadas, enemigos, contaminacion } = partida;
-  hud.actualizarContaminacion(contaminacion.porcentaje);
+  hud.actualizarContaminacion(contaminacion.porcentaje, peligro() > 0);
   hud.actualizarPresion(partida.presion.nivel / partida.ajustes.presion.reserva, estaSinPresion(partida.presion));
   hud.actualizarAgua(partida.agua);
   hud.actualizarOleada({
@@ -217,8 +217,9 @@ function peligro() {
   return Math.max((porcentaje - umbral) / (100 - umbral), 0.01);
 }
 
-// Sonidos de lo que pasó en el último paso: golpes al pozo, limpiezas y cambios de oleada o de presión.
-function sonarEventos(limpiados) {
+// Sonidos y efectos de lo que pasó en el último paso: impactos del chorro, golpes al pozo, limpiezas
+// y cambios de oleada o de presión.
+function reaccionarAEventos(limpiados) {
   const { oleadas } = partida;
   if (oleadas.fase !== anterior.fase) {
     if (oleadas.fase === FASES.EN_CURSO) sonido.oleadaEmpieza();
@@ -233,8 +234,17 @@ function sonarEventos(limpiados) {
   if (sinPresion && !anterior.sinPresion) sonido.sinPresion();
   anterior.sinPresion = sinPresion;
 
-  for (const golpe of partida.golpes) sonido.golpePozo(Math.min(golpe.contaminacion / GOLPE_FUERTE, 1));
-  for (const enemigo of limpiados) sonido.limpio(enemigo.tipo.tamano);
+  efectos.impactosDeAgua(partida.chorro.salpicaduras);
+  for (const golpe of partida.golpes) {
+    const fuerza = Math.min(golpe.contaminacion / GOLPE_FUERTE, 1);
+    sonido.golpePozo(fuerza);
+    efectos.golpeAlPozo(golpe, fuerza);
+  }
+  for (const enemigo of limpiados) {
+    sonido.limpio(enemigo.tipo.tamano);
+    efectos.limpio(enemigo);
+    etiquetas.agregar(`+${enemigo.tipo.recompensa}`, { x: enemigo.x, y: ALTURA_RECOMPENSA, z: enemigo.z });
+  }
 }
 
 // Capas continuas: el chorro, el agua que pega en alguien y el latido con el pozo en peligro.
@@ -276,13 +286,9 @@ function cuadro(tiempo) {
   jugador.sincronizar(partida.apuntado, jugando && input.disparando(), dtVisual);
   pozo.sincronizar(partida.contaminacion.porcentaje, dtVisual);
   chorroVisual.sincronizar(partida.chorro);
-  if (jugando) salpicaduras.emitir(partida.chorro.salpicaduras);
-  salpicaduras.actualizar(dtVisual);
   sincronizarEnemigos(dtVisual);
-  for (const enemigo of limpiados) {
-    etiquetas.agregar(`+${enemigo.tipo.recompensa}`, { x: enemigo.x, y: ALTURA_RECOMPENSA, z: enemigo.z });
-  }
-  if (jugando) sonarEventos(limpiados);
+  if (jugando) reaccionarAEventos(limpiados);
+  efectos.actualizar(dtVisual);
   sincronizarSonido(jugando, dtVisual);
   etiquetas.actualizar(camara, contenedor.clientWidth, contenedor.clientHeight, dtVisual);
   sincronizarHud();

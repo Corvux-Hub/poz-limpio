@@ -112,7 +112,9 @@ export function crearHud(contenedor) {
   let presionMostrada = null;
 
   return {
-    actualizarContaminacion(porcentaje) {
+    // Con `enPeligro` la barra y los bordes de la pantalla laten en café.
+    actualizarContaminacion(porcentaje, enPeligro) {
+      raiz.classList.toggle('peligro', enPeligro);
       if (porcentaje === contaminacionMostrada) return;
       // Destello en la barra cada vez que sube.
       if (contaminacionMostrada !== null && porcentaje > contaminacionMostrada) {

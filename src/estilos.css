@@ -33,6 +33,38 @@ body {
   color: #e8edf2;
 }
 
+/* Pozo en peligro: los bordes de la pantalla laten en café turbio, al ritmo del latido. */
+.hud::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(92, 58, 22, 0.6) 100%);
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.hud.peligro::before {
+  animation: peligro 1s ease-in-out infinite;
+}
+
+@keyframes peligro {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.hud.peligro .hud-valor {
+  color: #f0a35a;
+}
+
+.hud.peligro .hud-barra-contaminacion {
+  box-shadow: 0 0 10px rgba(200, 120, 50, 0.7);
+}
+
 .hud-contaminacion {
   position: absolute;
   top: 16px;

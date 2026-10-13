@@ -33,7 +33,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - El chorro son gotas que salen de la punta de la boquilla y viajan en línea recta (`velocidad`, `alcance`, `cadencia` y `ancho` en `config.json`).
 - Una gota se detiene en el primer cuerpo que toca: los enemigos de adelante cubren a los de atrás.
 - Al barrer con la manguera, el agua ya disparada conserva su dirección; al soltar, termina de caer.
-- La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó. También anota en `chorro.salpicaduras` dónde pegó cada gota, para dibujar ahí gotitas que saltan (`src/entities/salpicaduras.js`).
+- La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó. También anota en `chorro.salpicaduras` dónde pegó cada gota, para dibujar ahí gotitas que saltan (`src/entities/efectos.js`).
 - En la lógica el agua sale del cuerpo del avatar, no de la punta de la boquilla, para que también limpie a quien esté pegado a ella. Se dibuja desde la punta.
 
 ## Enemigos
@@ -43,7 +43,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Se detienen cuando el brocal queda a su `alcance` de ataque (en `enemies.json`), que los deja por fuera del avatar.
 - Su color va de `colorBase` a `colorLimpio` según su progreso de limpieza; mientras reciben agua brillan en azul.
 - En cuanto empiezan a recibir agua muestran una barra de limpieza sobre la cabeza.
-- Al quedar limpios: destello blanco con un pequeño salto de tamaño, un "+N" flotante con su `recompensa` de agua limpia, y un brillo blanco suave mientras se retiran.
+- Al quedar limpios: destello blanco con un pequeño salto de tamaño, una onda de luz que se abre en el suelo, motas de luz que suben, un "+N" flotante con su `recompensa` de agua limpia, y un brillo blanco suave mientras se retiran.
 - Al quedar limpios se detienen un momento (`enemigos.pausaAlLimpiarse`), dejan de ser objetivo del chorro y se retiran hasta salir del mapa.
 - Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
 - Los sucios no se enciman: `separarEnemigos` los aparta, y el que ya golpea el pozo no se deja empujar (los demás hacen fila o lo rodean).
@@ -146,6 +146,12 @@ Las armas multiplican el golpe (palo ×1.3, escoba ×1.2, tubo ×1.6).
 - `npm run balance` juega muchas partidas con un jugador automático (`herramientas/`) usando la misma lógica que el juego (`src/core/partida.js`) y resume, por oleada, cuántas partidas la superan y con cuánta contaminación, sin mejoras y comprando mejoras.
 - El jugador automático imita a un humano decente: se concentra en un objetivo, tarda en reaccionar al cambiarlo (`--reaccion`) y puede soltar el clic al quedarse sin presión (`--recargar-al 0.5`) o nunca soltarlo (`--recargar-al no`). Apunta perfecto, así que una persona rinde algo peor.
 - Antes y después de cambiar números de balance, correrlo y comparar. Meta actual: sin mejoras se ganan las oleadas 1 a 3 (la 3 deja el pozo a media contaminación); de la 4 en adelante hacen falta mejoras; con mejoras se llega a la 7 u 8 y el escalado termina por ganar.
+
+## Efectos y avisos
+
+- Partículas en `src/entities/efectos.js`, con los puntos que anota la lógica: gotitas donde el chorro pega, agua turbia que salta del pozo hacia quien lo golpea y motas de luz de quien queda limpio.
+- Con la contaminación en `pozo.peligro` (%) o más, la barra y los bordes de la pantalla laten en café turbio, junto con el latido del sonido.
+- La cámara nunca tiembla: el impacto se comunica con partículas, el HUD y el sonido.
 
 ## Sonido
 

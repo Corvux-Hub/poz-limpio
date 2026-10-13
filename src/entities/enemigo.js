@@ -34,6 +34,8 @@ const RESPUESTA_BRILLO = 10;
 const BLANCO = new THREE.Color(0xffffff);
 const DESTELLO = { duracion: 0.6, crecimiento: 0.2 };
 const BRILLO_LIMPIO = 0.18;
+// Onda de luz que se abre en el suelo al quedar limpio (radios en metros, duración en segundos).
+const ONDA = { desde: 0.3, hasta: 1.8, grosor: 0.12, duracion: 0.7, color: 0xcff4ff, opacidad: 0.8 };
 // Barra de limpieza sobre la cabeza: siempre de frente a la cámara y por encima de todo.
 const BARRA = { ancho: 0.8, alto: 0.09, altura: 2.1, borde: 0.02, fondo: 0x07090c, opacidadFondo: 0.75, relleno: 0x8fd8ff };
 const geometriaFondo = new THREE.PlaneGeometry(BARRA.ancho + BARRA.borde * 2, BARRA.alto + BARRA.borde * 2);
@@ -210,9 +212,22 @@ export function crearEnemigoVisual({ tipo, radio, arma }, orientacionCamara) {
 
   const { barra, relleno } = crearBarra();
   barra.quaternion.copy(orientacionCamara);
+  // Oculta hasta que queda limpio.
+  const onda = new THREE.Mesh(
+    new THREE.RingGeometry(1 - ONDA.grosor, 1, 48).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({
+      color: ONDA.color,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
+  );
+  onda.position.y = 0.03;
+  onda.visible = false;
+
   // `movil` sigue al enemigo; `grupo` queda fijo en el origen para que el arma soltada se quede donde cayó.
   const movil = new THREE.Group();
-  movil.add(figura, barra);
+  movil.add(figura, barra, onda);
   const grupo = new THREE.Group();
   grupo.add(movil);
 
@@ -295,6 +310,10 @@ export function crearEnemigoVisual({ tipo, radio, arma }, orientacionCamara) {
 
       if (tiempoLimpio === null && armaEnMano) soltarArma(enemigo);
       tiempoLimpio = tiempoLimpio === null ? 0 : tiempoLimpio + dt;
+      const avanceOnda = Math.min(tiempoLimpio / ONDA.duracion, 1);
+      onda.scale.setScalar(ONDA.desde + (ONDA.hasta - ONDA.desde) * Math.sqrt(avanceOnda));
+      onda.material.opacity = ONDA.opacidad * (1 - avanceOnda);
+      onda.visible = avanceOnda < 1;
       const avance = Math.min(tiempoLimpio / DESTELLO.duracion, 1);
       brillo.copy(BLANCO).multiplyScalar(BRILLO_LIMPIO + (1 - BRILLO_LIMPIO) * (1 - avance));
       for (const material of materiales) material.emissive.copy(brillo);
