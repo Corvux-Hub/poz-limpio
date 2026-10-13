@@ -39,8 +39,8 @@
     "pausaAlLimpiarse": 0.8,
     "margenSalida": 1.5
   },
-  "enemigoDePrueba": {
-    "tipo": "peaton",
-    "reaparicion": 1.5
+  "oleadas": {
+    "esperaInicial": 3,
+    "descanso": 6
   }
 }

@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { aplicarAgua, progresoDeLimpieza, tiempoDeLimpieza } from '../src/systems/limpieza.js';
-import { ESTADOS, actualizarEnemigo, crearEnemigo, esObjetivo, puntoEnBorde } from '../src/systems/enemigos.js';
+import {
+  ESTADOS,
+  actualizarEnemigo,
+  crearEnemigo,
+  esObjetivo,
+  puntoEnBorde,
+  puntoEnZona,
+  separarEnemigos,
+} from '../src/systems/enemigos.js';
 
 const PEATON = { suciedad: 3, tamano: 1, velocidad: 1, alcance: 0.5, contaminacion: 5, intervaloGolpe: 1.5 };
 const MAPA = { ancho: 20, alto: 10 };
@@ -138,4 +146,38 @@ test('limpio deja de contaminar aunque esté frente al pozo', () => {
   simular(enemigo, 3, 0.01, true);
   assert.equal(enemigo.estado, ESTADOS.LIMPIO);
   assert.equal(simular(enemigo, 0.5, 0.01, false), 0);
+});
+
+test('puntoEnZona cae sobre el lado pedido', () => {
+  assert.equal(puntoEnZona(MAPA, 'arriba', () => 0.25).z, -MAPA.alto / 2);
+  assert.equal(puntoEnZona(MAPA, 'abajo', () => 0.25).z, MAPA.alto / 2);
+  assert.equal(puntoEnZona(MAPA, 'izquierda', () => 0.25).x, -MAPA.ancho / 2);
+  assert.deepEqual(puntoEnZona(MAPA, 'derecha', () => 0.25), { x: MAPA.ancho / 2, z: -MAPA.alto / 4 });
+  assert.throws(() => puntoEnZona(MAPA, 'norte', () => 0.5), /Zona de aparición desconocida/);
+});
+
+test('separarEnemigos aparta a dos que se enciman', () => {
+  const a = crearEnemigo(1, PEATON, { x: 5, z: 0 }, 0.4);
+  const b = crearEnemigo(2, PEATON, { x: 5.2, z: 0 }, 0.4);
+  separarEnemigos([a, b]);
+  assert.ok(cerca(b.x - a.x, 0.8));
+  assert.ok(cerca(a.x + b.x, 10.2));
+});
+
+test('el que está frente al pozo no se deja empujar', () => {
+  const enPozo = enemigoEnPozo();
+  const xFijo = enPozo.x;
+  const recienLlegado = crearEnemigo(2, PEATON, { x: enPozo.x + 0.3, z: 0.1 }, 0.4);
+  separarEnemigos([enPozo, recienLlegado]);
+  assert.equal(enPozo.x, xFijo);
+  assert.ok(cerca(Math.hypot(recienLlegado.x - enPozo.x, recienLlegado.z - enPozo.z), 0.8));
+});
+
+test('los limpios no empujan ni son empujados', () => {
+  const sucio = crearEnemigo(1, PEATON, { x: 5, z: 0 }, 0.4);
+  const limpio = crearEnemigo(2, PEATON, { x: 5.1, z: 0 }, 0.4);
+  limpio.estado = ESTADOS.RETIRANDOSE;
+  separarEnemigos([sucio, limpio]);
+  assert.equal(sucio.x, 5);
+  assert.equal(limpio.x, 5.1);
 });

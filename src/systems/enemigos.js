@@ -41,6 +41,51 @@ export function puntoEnBorde({ ancho, alto }, aleatorio) {
   return { x: -ancho / 2, z: alto / 2 - t };
 }
 
+// Punto al azar sobre un lado del mapa: 'arriba', 'abajo', 'izquierda', 'derecha' o 'cualquiera'.
+// Arriba es el borde lejano de la cámara (z negativo).
+export function puntoEnZona(mapa, zona, aleatorio) {
+  const { ancho, alto } = mapa;
+  switch (zona) {
+    case 'arriba':
+      return { x: (aleatorio() - 0.5) * ancho, z: -alto / 2 };
+    case 'abajo':
+      return { x: (aleatorio() - 0.5) * ancho, z: alto / 2 };
+    case 'izquierda':
+      return { x: -ancho / 2, z: (aleatorio() - 0.5) * alto };
+    case 'derecha':
+      return { x: ancho / 2, z: (aleatorio() - 0.5) * alto };
+    case 'cualquiera':
+      return puntoEnBorde(mapa, aleatorio);
+    default:
+      throw new Error(`Zona de aparición desconocida: "${zona}"`);
+  }
+}
+
+// Separa a los enemigos sucios que se enciman. El que ya está frente al pozo no se deja empujar:
+// el otro se hace a un lado (o se queda detrás, haciendo fila).
+export function separarEnemigos(enemigos) {
+  const activos = enemigos.filter(esObjetivo);
+  for (let i = 0; i < activos.length; i++) {
+    for (let j = i + 1; j < activos.length; j++) {
+      const a = activos[i];
+      const b = activos[j];
+      const distancia = Math.hypot(b.x - a.x, b.z - a.z);
+      const solape = a.radio + b.radio - distancia;
+      if (solape <= 0) continue;
+      // Si están exactamente en el mismo punto, cualquier dirección sirve.
+      const nx = distancia > 0 ? (b.x - a.x) / distancia : 1;
+      const nz = distancia > 0 ? (b.z - a.z) / distancia : 0;
+      const fijoA = a.estado === ESTADOS.EN_POZO;
+      const fijoB = b.estado === ESTADOS.EN_POZO;
+      const parteA = fijoA === fijoB ? 0.5 : fijoA ? 0 : 1;
+      a.x -= nx * solape * parteA;
+      a.z -= nz * solape * parteA;
+      b.x += nx * solape * (1 - parteA);
+      b.z += nz * solape * (1 - parteA);
+    }
+  }
+}
+
 function avanzarHaciaElPozo(enemigo, radioPozo, dt) {
   const distancia = Math.hypot(enemigo.x, enemigo.z);
   // Se detiene cuando el brocal queda a su alcance de ataque.

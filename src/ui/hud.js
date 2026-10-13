@@ -1,4 +1,4 @@
-// HUD en HTML sobre el canvas: contaminación del pozo y pantalla de derrota.
+// HUD en HTML sobre el canvas: contaminación del pozo, oleada, avisos y pantallas de pausa y derrota.
 
 // Color de la barra: azul con el pozo limpio, café cuando está contaminado.
 const COLOR_LIMPIO = [74, 163, 214];
@@ -9,6 +9,33 @@ function mezclar(desde, hasta, t) {
   return `rgb(${canal(0)}, ${canal(1)}, ${canal(2)})`;
 }
 
+// Cambia el texto solo si cambió, para no tocar el DOM en cada cuadro.
+function escribir(elemento, texto) {
+  if (elemento.textContent !== texto) elemento.textContent = texto;
+}
+
+function crearPantalla(raiz, clase) {
+  const pantalla = raiz.querySelector(clase);
+  const boton = pantalla.querySelector('button');
+  let alPresionar = null;
+  boton.addEventListener('click', () => {
+    boton.blur();
+    alPresionar?.();
+  });
+  return {
+    pantalla,
+    boton,
+    mostrar(accion) {
+      alPresionar = accion;
+      pantalla.hidden = false;
+    },
+    ocultar() {
+      alPresionar = null;
+      pantalla.hidden = true;
+    },
+  };
+}
+
 export function crearHud(contenedor) {
   const raiz = document.createElement('div');
   raiz.className = 'hud';
@@ -17,8 +44,23 @@ export function crearHud(contenedor) {
       <div class="hud-etiqueta"><span>Contaminación del pozo</span><span class="hud-valor">0 %</span></div>
       <div class="hud-barra"><div class="hud-relleno"></div></div>
     </div>
-    <div class="derrota" hidden>
-      <div class="derrota-tarjeta">
+    <div class="hud-oleada">
+      <div class="hud-oleada-numero"></div>
+      <div class="hud-oleada-quedan"></div>
+    </div>
+    <div class="hud-aviso" hidden>
+      <div class="hud-aviso-titulo"></div>
+      <div class="hud-aviso-detalle"></div>
+    </div>
+    <div class="pantalla pausa" hidden>
+      <div class="pantalla-tarjeta">
+        <h1>Pausa</h1>
+        <p>Presiona Espacio o Esc para continuar.</p>
+        <button type="button">Continuar</button>
+      </div>
+    </div>
+    <div class="pantalla derrota" hidden>
+      <div class="pantalla-tarjeta">
         <h1>El pozo se contaminó</h1>
         <p class="derrota-resumen"></p>
         <button type="button">Reintentar</button>
@@ -30,37 +72,52 @@ export function crearHud(contenedor) {
   const valor = raiz.querySelector('.hud-valor');
   const barra = raiz.querySelector('.hud-barra');
   const relleno = raiz.querySelector('.hud-relleno');
-  const derrota = raiz.querySelector('.derrota');
+  const numeroOleada = raiz.querySelector('.hud-oleada-numero');
+  const quedan = raiz.querySelector('.hud-oleada-quedan');
+  const aviso = raiz.querySelector('.hud-aviso');
+  const avisoTitulo = raiz.querySelector('.hud-aviso-titulo');
+  const avisoDetalle = raiz.querySelector('.hud-aviso-detalle');
+  const pausa = crearPantalla(raiz, '.pausa');
+  const derrota = crearPantalla(raiz, '.derrota');
   const resumen = raiz.querySelector('.derrota-resumen');
-  const boton = raiz.querySelector('.derrota button');
-  let alReintentar = null;
-  boton.addEventListener('click', () => alReintentar?.());
 
-  let mostrado = null;
+  let contaminacionMostrada = null;
 
   return {
     actualizarContaminacion(porcentaje) {
-      if (porcentaje === mostrado) return;
+      if (porcentaje === contaminacionMostrada) return;
       // Destello en la barra cada vez que sube.
-      if (mostrado !== null && porcentaje > mostrado) {
+      if (contaminacionMostrada !== null && porcentaje > contaminacionMostrada) {
         barra.classList.remove('golpe');
         void barra.offsetWidth;
         barra.classList.add('golpe');
       }
-      mostrado = porcentaje;
+      contaminacionMostrada = porcentaje;
       valor.textContent = `${Math.floor(porcentaje)} %`;
       relleno.style.width = `${porcentaje}%`;
       relleno.style.backgroundColor = mezclar(COLOR_LIMPIO, COLOR_SUCIO, porcentaje / 100);
     },
-    mostrarDerrota(limpiados, reintentar) {
-      resumen.textContent = `Limpiaste a ${limpiados} ${limpiados === 1 ? 'ciudadano' : 'ciudadanos'}.`;
-      alReintentar = reintentar;
-      derrota.hidden = false;
-      boton.focus();
+
+    // En descanso muestra la cuenta regresiva de la siguiente; en curso, cuántos sucios quedan.
+    actualizarOleada({ numero, enDescanso, segundosParaEmpezar, sucios }) {
+      escribir(numeroOleada, `Oleada ${numero}`);
+      escribir(quedan, enDescanso ? 'Preparándose' : `Quedan ${sucios}`);
+      aviso.hidden = !enDescanso;
+      if (enDescanso) {
+        escribir(avisoTitulo, numero === 1 ? 'Defiende el pozo' : `Oleada ${numero - 1} superada`);
+        escribir(avisoDetalle, `La oleada ${numero} empieza en ${Math.ceil(segundosParaEmpezar)}`);
+      }
     },
-    ocultarDerrota() {
-      derrota.hidden = true;
-      alReintentar = null;
+
+    mostrarPausa: (alContinuar) => pausa.mostrar(alContinuar),
+    ocultarPausa: () => pausa.ocultar(),
+
+    mostrarDerrota({ oleada, limpiados }, alReintentar) {
+      const ciudadanos = limpiados === 1 ? 'ciudadano' : 'ciudadanos';
+      resumen.textContent = `Llegaste a la oleada ${oleada} y limpiaste a ${limpiados} ${ciudadanos}.`;
+      derrota.mostrar(alReintentar);
+      derrota.boton.focus();
     },
+    ocultarDerrota: () => derrota.ocultar(),
   };
 }

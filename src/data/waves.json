@@ -1,0 +1,31 @@
+{
+  "oleadas": [
+    {
+      "grupos": [{ "tipo": "peaton", "cantidad": 4, "intervalo": 3, "aparicion": "cualquiera" }]
+    },
+    {
+      "grupos": [{ "tipo": "peaton", "cantidad": 6, "intervalo": 2.5, "aparicion": ["izquierda", "derecha"] }]
+    },
+    {
+      "grupos": [
+        { "tipo": "peaton", "cantidad": 4, "intervalo": 2.5, "aparicion": "arriba" },
+        { "tipo": "peaton", "cantidad": 4, "intervalo": 2.5, "retraso": 1.25, "aparicion": "abajo" }
+      ]
+    },
+    {
+      "grupos": [{ "tipo": "peaton", "cantidad": 10, "intervalo": 1.8, "aparicion": "cualquiera" }]
+    },
+    {
+      "grupos": [
+        { "tipo": "peaton", "cantidad": 5, "intervalo": 2, "aparicion": "izquierda" },
+        { "tipo": "peaton", "cantidad": 5, "intervalo": 2, "retraso": 1, "aparicion": "derecha" },
+        { "tipo": "peaton", "cantidad": 4, "intervalo": 3, "retraso": 4, "aparicion": ["arriba", "abajo"] }
+      ]
+    }
+  ],
+  "escalado": {
+    "cantidad": 1.2,
+    "intervalo": 0.92,
+    "intervaloMinimo": 0.6
+  }
+}

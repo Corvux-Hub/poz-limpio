@@ -1,6 +1,7 @@
 import './estilos.css';
 import config from './data/config.json';
 import tiposDeEnemigo from './data/enemies.json';
+import datosOleadas from './data/waves.json';
 import { crearEscena } from './core/escena.js';
 import { ajustarCamara, crearCamara } from './core/camara.js';
 import { crearInput } from './core/input.js';
@@ -11,9 +12,17 @@ import { crearEnemigoVisual } from './entities/enemigo.js';
 import { crearHud } from './ui/hud.js';
 import { actualizarApuntado, crearApuntado, puntoEnDireccion } from './systems/apuntado.js';
 import { actualizarChorro, crearChorro } from './systems/chorro.js';
-import { ESTADOS, actualizarEnemigo, crearEnemigo, esObjetivo, puntoEnBorde } from './systems/enemigos.js';
+import {
+  ESTADOS,
+  actualizarEnemigo,
+  crearEnemigo,
+  esObjetivo,
+  puntoEnZona,
+  separarEnemigos,
+} from './systems/enemigos.js';
 import { progresoDeLimpieza } from './systems/limpieza.js';
 import { contaminar, crearContaminacion, estaPerdido } from './systems/contaminacion.js';
+import { FASES, actualizarOleadas, crearOleadas, porAparecer } from './systems/oleadas.js';
 
 // El pozo está siempre en el centro del mapa.
 const CENTRO_POZO = { x: 0, z: 0 };
@@ -44,7 +53,7 @@ function nuevaPartida() {
     chorro: crearChorro(),
     enemigos: [],
     contaminacion: crearContaminacion(),
-    esperaReaparicion: 0,
+    oleadas: crearOleadas(config.oleadas.esperaInicial),
     limpiados: 0,
   };
 }
@@ -52,7 +61,27 @@ function nuevaPartida() {
 function reiniciar() {
   partida = nuevaPartida();
   hud.ocultarDerrota();
+  hud.ocultarPausa();
 }
+
+function pausar() {
+  if (partida.estado !== 'jugando') return;
+  partida.estado = 'pausa';
+  hud.mostrarPausa(reanudar);
+}
+
+function reanudar() {
+  if (partida.estado !== 'pausa') return;
+  partida.estado = 'jugando';
+  hud.ocultarPausa();
+}
+
+input.alPedirPausa(() => (partida.estado === 'pausa' ? reanudar() : pausar()));
+// Si el jugador cambia de ventana o de pestaña, la partida se pausa sola.
+window.addEventListener('blur', pausar);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) pausar();
+});
 
 const entornoEnemigos = {
   radioPozo: config.pozo.radio,
@@ -74,20 +103,20 @@ function redimensionar() {
 window.addEventListener('resize', redimensionar);
 redimensionar();
 
-// Hasta el hito 5: un solo enemigo a la vez; cuando se va, aparece otro en el borde del mapa.
-function actualizarEnemigoDePrueba(dt) {
-  if (partida.enemigos.length > 0) return;
-  partida.esperaReaparicion -= dt;
-  if (partida.esperaReaparicion > 0) return;
-  const tipo = tiposDeEnemigo[config.enemigoDePrueba.tipo];
-  const punto = puntoEnBorde(config.mapa, Math.random);
-  partida.enemigos.push(crearEnemigo(siguienteId++, tipo, punto, config.enemigos.radioBase));
-  partida.esperaReaparicion = config.enemigoDePrueba.reaparicion;
+// Hace aparecer en el borde los enemigos que pide la oleada.
+function actualizarOleada(dt) {
+  const entorno = { quedanSucios: partida.enemigos.some(esObjetivo), descanso: config.oleadas.descanso };
+  for (const pedido of actualizarOleadas(partida.oleadas, datosOleadas, entorno, Math.random, dt)) {
+    const tipo = tiposDeEnemigo[pedido.tipo];
+    if (!tipo) throw new Error(`Tipo de enemigo desconocido en waves.json: "${pedido.tipo}"`);
+    const punto = puntoEnZona(config.mapa, pedido.zona, Math.random);
+    partida.enemigos.push(crearEnemigo(siguienteId++, tipo, punto, config.enemigos.radioBase));
+  }
 }
 
 // Avanza la partida dt segundos y devuelve los ids de los enemigos que recibieron agua.
 function actualizarPartida(dt) {
-  actualizarEnemigoDePrueba(dt);
+  actualizarOleada(dt);
   actualizarApuntado(apuntado, CENTRO_POZO, input.puntoApuntado(), config.avatar.velocidadGiro, dt);
   const disparo = {
     disparando: input.disparando(),
@@ -101,13 +130,25 @@ function actualizarPartida(dt) {
     contaminar(partida.contaminacion, actualizarEnemigo(enemigo, tocados.has(enemigo.id), entornoEnemigos, dt));
     if (estabaSucio && enemigo.estado === ESTADOS.LIMPIO) partida.limpiados++;
   }
+  separarEnemigos(partida.enemigos);
   partida.enemigos = partida.enemigos.filter((enemigo) => enemigo.estado !== ESTADOS.FUERA);
 
   if (estaPerdido(partida.contaminacion)) {
     partida.estado = 'derrota';
-    hud.mostrarDerrota(partida.limpiados, reiniciar);
+    hud.mostrarDerrota({ oleada: partida.oleadas.numero, limpiados: partida.limpiados }, reiniciar);
   }
   return tocados;
+}
+
+function sincronizarHud() {
+  const { oleadas, enemigos, contaminacion } = partida;
+  hud.actualizarContaminacion(contaminacion.porcentaje);
+  hud.actualizarOleada({
+    numero: oleadas.numero,
+    enDescanso: oleadas.fase === FASES.DESCANSO,
+    segundosParaEmpezar: oleadas.espera,
+    sucios: porAparecer(oleadas) + enemigos.filter(esObjetivo).length,
+  });
 }
 
 function sincronizarEnemigos(tocados, dt) {
@@ -138,7 +179,7 @@ function cuadro(tiempo) {
   const dt = Math.min(Math.max((tiempo - tiempoAnterior) / 1000, 0), config.juego.dtMaximo);
   tiempoAnterior = tiempo;
 
-  // Lógica: tras la derrota todo queda congelado detrás de la pantalla final.
+  // Lógica: en pausa o tras la derrota todo queda congelado detrás de la pantalla.
   const jugando = partida.estado === 'jugando';
   const tocados = jugando ? actualizarPartida(dt) : SIN_TOCADOS;
   const dtVisual = jugando ? dt : 0;
@@ -148,7 +189,7 @@ function cuadro(tiempo) {
   pozo.sincronizar(partida.contaminacion.porcentaje);
   chorroVisual.sincronizar(partida.chorro);
   sincronizarEnemigos(tocados, dtVisual);
-  hud.actualizarContaminacion(partida.contaminacion.porcentaje);
+  sincronizarHud();
   renderer.render(escena, camara);
 }
 

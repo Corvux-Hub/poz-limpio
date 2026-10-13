@@ -23,7 +23,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 
 - Ratón: la manguera apunta al cursor (raycast contra un plano horizontal a la altura de la cintura, `apuntado.alturaPlano`, para que apuntar al cuerpo de alguien le apunte a él y no al suelo detrás).
 - Clic izquierdo mantenido: dispara el chorro.
-- Tecla Espacio o Esc: pausa.
+- Tecla Espacio o Esc: pausa. La partida también se pausa sola si la ventana pierde el foco.
 - Soporte táctil: fuera de alcance por ahora.
 
 ## Chorro
@@ -41,7 +41,18 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Su color va de `colorBase` a `colorLimpio` según su progreso de limpieza; mientras reciben agua brillan en azul.
 - Al quedar limpios se detienen un momento (`enemigos.pausaAlLimpiarse`), dejan de ser objetivo del chorro y se retiran hasta salir del mapa.
 - Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
-- Hasta el hito 5, `enemigoDePrueba` en `config.json` hace aparecer uno a la vez.
+- Los sucios no se enciman: `separarEnemigos` los aparta, y el que ya golpea el pozo no se deja empujar (los demás hacen fila o lo rodean).
+
+## Oleadas
+
+- Las define `src/data/waves.json`. Cada oleada es una lista de `grupos`, y cada grupo tiene:
+  - `tipo`: clave de `enemies.json`.
+  - `cantidad` e `intervalo` (segundos entre uno y otro).
+  - `retraso` opcional: segundos desde que empieza la oleada hasta que sale el primero del grupo.
+  - `aparicion`: `arriba`, `abajo`, `izquierda`, `derecha` o `cualquiera`, o una lista de esas para elegir al azar. Arriba es el borde lejano de la cámara.
+- Una oleada termina cuando ya salieron todos sus enemigos y no queda ninguno sucio. Luego hay un descanso (`oleadas.descanso` en `config.json`) con cuenta regresiva; la primera espera `oleadas.esperaInicial`.
+- Después de las oleadas definidas se repite la última escalada: `escalado.cantidad` multiplica la cantidad e `escalado.intervalo` el intervalo por cada oleada extra, sin bajar de `escalado.intervaloMinimo`.
+- La lógica vive en `src/systems/oleadas.js`.
 
 ## Mecánica central: limpieza
 
