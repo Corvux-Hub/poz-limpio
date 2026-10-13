@@ -1,0 +1,11 @@
+{
+  "peaton": {
+    "nombre": "Peatón ligero",
+    "suciedad": 3,
+    "tamano": 1,
+    "velocidad": 1.2,
+    "alcance": 0.9,
+    "colorBase": "#5a4738",
+    "colorLimpio": "#e3ebf0"
+  }
+}

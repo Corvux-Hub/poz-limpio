@@ -32,6 +32,16 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Una gota se detiene en el primer cuerpo que toca: los enemigos de adelante cubren a los de atrás.
 - Al barrer con la manguera, el agua ya disparada conserva su dirección; al soltar, termina de caer.
 - La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó.
+- En la lógica el agua sale del cuerpo del avatar, no de la punta de la boquilla, para que también limpie a quien esté pegado a ella. Se dibuja desde la punta.
+
+## Enemigos
+
+- Aparecen en el borde del mapa y caminan en línea recta hacia el pozo.
+- Se detienen cuando el brocal queda a su `alcance` de ataque (en `enemies.json`), que los deja por fuera del avatar.
+- Su color va de `colorBase` a `colorLimpio` según su progreso de limpieza; mientras reciben agua brillan en azul.
+- Al quedar limpios se detienen un momento (`enemigos.pausaAlLimpiarse`), dejan de ser objetivo del chorro y se retiran hasta salir del mapa.
+- Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
+- Hasta el hito 5, `enemigoDePrueba` en `config.json` hace aparecer uno a la vez.
 
 ## Mecánica central: limpieza
 
