@@ -7,6 +7,14 @@ import armas from './data/armas.json';
 import { crearEscena } from './core/escena.js';
 import { ajustarCamara, crearCamara } from './core/camara.js';
 import { crearInput } from './core/input.js';
+import {
+  avanzarPartida,
+  comprarMejora,
+  crearPartida,
+  esperaMejoras,
+  perdio,
+  seguirConLaSiguienteOleada,
+} from './core/partida.js';
 import { crearPozo } from './entities/pozo.js';
 import { crearJugador } from './entities/jugador.js';
 import { crearChorroVisual } from './entities/chorro.js';
@@ -14,23 +22,12 @@ import { crearEnemigoVisual } from './entities/enemigo.js';
 import { crearHud } from './ui/hud.js';
 import { crearMenuMejoras } from './ui/mejoras.js';
 import { crearEtiquetasFlotantes } from './ui/etiquetas.js';
-import { actualizarApuntado, crearApuntado, puntoEnDireccion } from './systems/apuntado.js';
-import { actualizarChorro, crearChorro } from './systems/chorro.js';
-import {
-  ESTADOS,
-  actualizarEnemigo,
-  crearEnemigo,
-  esObjetivo,
-  puntoEnZona,
-  separarEnemigos,
-} from './systems/enemigos.js';
+import { esObjetivo } from './systems/enemigos.js';
 import { estaRecibiendoAgua, progresoDeLimpieza } from './systems/limpieza.js';
-import { contaminar, crearContaminacion, estaPerdido } from './systems/contaminacion.js';
-import { FASES, actualizarOleadas, continuarOleadas, crearOleadas, porAparecer } from './systems/oleadas.js';
-import { aplicarMejoras, comprar, crearMejoras, estadoDeMejora } from './systems/mejoras.js';
+import { porAparecer } from './systems/oleadas.js';
+import { estadoDeMejora } from './systems/mejoras.js';
 
-// El pozo está siempre en el centro del mapa.
-const CENTRO_POZO = { x: 0, z: 0 };
+const datos = { config, tipos: tiposDeEnemigo, armas, oleadas: datosOleadas, mejoras: catalogoMejoras };
 // Altura (m) desde la que sube el "+N" de agua limpia al limpiar a alguien.
 const ALTURA_RECOMPENSA = 2.3;
 
@@ -47,26 +44,9 @@ const etiquetas = crearEtiquetasFlotantes(document.body);
 const hud = crearHud(document.body);
 const menuMejoras = crearMenuMejoras(document.body, catalogoMejoras);
 
-// Estado lógico (sin Three.js). Estados de la partida: jugando, pausa, mejoras y derrota.
-const apuntado = crearApuntado();
+// Estado lógico (sin Three.js) y estado de la pantalla: jugando, pausa, mejoras o derrota.
 let partida;
-let siguienteId = 0;
-
-function nuevaPartida() {
-  const mejoras = crearMejoras();
-  return {
-    estado: 'jugando',
-    chorro: crearChorro(),
-    enemigos: [],
-    contaminacion: crearContaminacion(),
-    oleadas: crearOleadas(config.oleadas.esperaInicial),
-    limpiados: 0,
-    agua: 0,
-    mejoras,
-    // Parámetros vigentes: los de config.json con las mejoras compradas aplicadas.
-    ajustes: aplicarMejoras({ chorro: config.chorro, pozo: config.pozo }, mejoras, catalogoMejoras),
-  };
-}
+let estado;
 
 // El chorro visual depende del alcance y el ancho, así que se rehace cuando cambian.
 let chorroVisual = null;
@@ -84,7 +64,8 @@ function rehacerChorroVisual() {
 }
 
 function reiniciar() {
-  partida = nuevaPartida();
+  partida = crearPartida(datos);
+  estado = 'jugando';
   rehacerChorroVisual();
   etiquetas.limpiar();
   hud.ocultarDerrota();
@@ -93,18 +74,18 @@ function reiniciar() {
 }
 
 function pausar() {
-  if (partida.estado !== 'jugando') return;
-  partida.estado = 'pausa';
+  if (estado !== 'jugando') return;
+  estado = 'pausa';
   hud.mostrarPausa(reanudar);
 }
 
 function reanudar() {
-  if (partida.estado !== 'pausa') return;
-  partida.estado = 'jugando';
+  if (estado !== 'pausa') return;
+  estado = 'jugando';
   hud.ocultarPausa();
 }
 
-input.alPedirPausa(() => (partida.estado === 'pausa' ? reanudar() : pausar()));
+input.alPedirPausa(() => (estado === 'pausa' ? reanudar() : pausar()));
 // Si el jugador cambia de ventana o de pestaña, la partida se pausa sola.
 window.addEventListener('blur', pausar);
 document.addEventListener('visibilitychange', () => {
@@ -117,23 +98,22 @@ function refrescarMenuMejoras() {
 }
 
 function abrirMejoras() {
-  partida.estado = 'mejoras';
+  estado = 'mejoras';
   const siguiente = partida.oleadas.numero;
-  menuMejoras.mostrar({ oleadaSuperada: siguiente - 1, siguiente }, comprarMejora, cerrarMejoras);
+  menuMejoras.mostrar({ oleadaSuperada: siguiente - 1, siguiente }, alComprarMejora, cerrarMejoras);
   refrescarMenuMejoras();
 }
 
-function comprarMejora(id) {
-  if (!comprar(id, partida, catalogoMejoras)) return;
-  partida.ajustes = aplicarMejoras({ chorro: config.chorro, pozo: config.pozo }, partida.mejoras, catalogoMejoras);
+function alComprarMejora(id) {
+  if (!comprarMejora(partida, datos, id)) return;
   rehacerChorroVisual();
   refrescarMenuMejoras();
 }
 
 function cerrarMejoras() {
   menuMejoras.ocultar();
-  continuarOleadas(partida.oleadas, config.oleadas.descanso);
-  partida.estado = 'jugando';
+  seguirConLaSiguienteOleada(partida, datos);
+  estado = 'jugando';
 }
 
 // Visual de cada enemigo vivo, por id.
@@ -147,66 +127,14 @@ function redimensionar() {
 window.addEventListener('resize', redimensionar);
 redimensionar();
 
-// El arma del grupo de la oleada manda sobre la del tipo; "ninguna" la quita.
-function armaDe(pedido, tipo) {
-  const id = pedido.arma ?? tipo.arma;
-  if (!id || id === 'ninguna') return null;
-  if (!armas[id]) throw new Error(`Arma desconocida: "${id}"`);
-  return armas[id];
-}
-
-// Hace aparecer en el borde los enemigos que pide la oleada.
-function actualizarOleada(dt) {
-  const entorno = { quedanSucios: partida.enemigos.some(esObjetivo), celebracion: config.oleadas.celebracion };
-  for (const pedido of actualizarOleadas(partida.oleadas, datosOleadas, entorno, Math.random, dt)) {
-    const tipo = tiposDeEnemigo[pedido.tipo];
-    if (!tipo) throw new Error(`Tipo de enemigo desconocido en waves.json: "${pedido.tipo}"`);
-    const punto = puntoEnZona(config.mapa, pedido.zona, Math.random);
-    partida.enemigos.push(crearEnemigo(siguienteId++, tipo, punto, config.enemigos.radioBase, armaDe(pedido, tipo)));
-  }
-}
-
-// Avanza la partida dt segundos. Devuelve los enemigos que quedaron limpios en este paso.
-function actualizarPartida(dt) {
-  const { ajustes } = partida;
-  actualizarOleada(dt);
-  actualizarApuntado(apuntado, CENTRO_POZO, input.puntoApuntado(), config.avatar.velocidadGiro, dt);
-  const disparo = {
-    disparando: input.disparando(),
-    origen: puntoEnDireccion(CENTRO_POZO, apuntado.angulo, jugador.distanciaCuerpo),
-    angulo: apuntado.angulo,
-  };
-  const impactos = actualizarChorro(partida.chorro, disparo, partida.enemigos.filter(esObjetivo), ajustes.chorro, dt);
-
-  const entorno = {
-    radioPozo: config.pozo.radio,
-    potencia: ajustes.chorro.potencia,
-    regeneracion: config.limpieza.regeneracion,
-    gracia: config.limpieza.gracia,
-    pausaAlLimpiarse: config.enemigos.pausaAlLimpiarse,
-    mapa: config.mapa,
-    margenSalida: config.enemigos.margenSalida,
-  };
-  const limpiados = [];
-  for (const enemigo of partida.enemigos) {
-    const estabaSucio = esObjetivo(enemigo);
-    // Cada gota que le pegó equivale a 1/cadencia segundos de chorro.
-    const segundosDeAgua = (impactos.get(enemigo.id) ?? 0) / ajustes.chorro.cadencia;
-    const golpes = actualizarEnemigo(enemigo, segundosDeAgua, entorno, dt);
-    contaminar(partida.contaminacion, golpes * ajustes.pozo.factorContaminacion);
-    if (estabaSucio && enemigo.estado === ESTADOS.LIMPIO) {
-      partida.limpiados++;
-      partida.agua += enemigo.tipo.recompensa;
-      limpiados.push(enemigo);
-    }
-  }
-  separarEnemigos(partida.enemigos);
-  partida.enemigos = partida.enemigos.filter((enemigo) => enemigo.estado !== ESTADOS.FUERA);
-
-  if (estaPerdido(partida.contaminacion)) {
-    partida.estado = 'derrota';
+// Avanza la lógica y abre la pantalla que toque. Devuelve los enemigos que quedaron limpios.
+function jugar(dt) {
+  const entrada = { objetivo: input.puntoApuntado(), disparando: input.disparando() };
+  const limpiados = avanzarPartida(partida, datos, entrada, dt);
+  if (perdio(partida)) {
+    estado = 'derrota';
     hud.mostrarDerrota({ oleada: partida.oleadas.numero, limpiados: partida.limpiados }, reiniciar);
-  } else if (partida.oleadas.fase === FASES.ESPERANDO) {
+  } else if (esperaMejoras(partida)) {
     abrirMejoras();
   }
   return limpiados;
@@ -254,12 +182,12 @@ function cuadro(tiempo) {
   tiempoAnterior = tiempo;
 
   // Lógica: fuera de 'jugando' (pausa, mejoras, derrota) todo queda congelado detrás de la pantalla.
-  const jugando = partida.estado === 'jugando';
-  const limpiados = jugando ? actualizarPartida(dt) : NINGUNO;
+  const jugando = estado === 'jugando';
+  const limpiados = jugando ? jugar(dt) : NINGUNO;
   const dtVisual = jugando ? dt : 0;
 
   // Render.
-  jugador.sincronizar(apuntado);
+  jugador.sincronizar(partida.apuntado);
   pozo.sincronizar(partida.contaminacion.porcentaje);
   chorroVisual.sincronizar(partida.chorro);
   sincronizarEnemigos(dtVisual);
