@@ -10,7 +10,18 @@ export const ESTADOS = {
 };
 
 export function crearEnemigo(id, tipo, { x, z }, radioBase) {
-  return { id, tipo, x, z, radio: radioBase * tipo.tamano, exposicion: 0, estado: ESTADOS.AVANZANDO, espera: 0 };
+  return {
+    id,
+    tipo,
+    x,
+    z,
+    radio: radioBase * tipo.tamano,
+    exposicion: 0,
+    estado: ESTADOS.AVANZANDO,
+    espera: 0,
+    // Segundos desde su último golpe al pozo (para animarlo); Infinity si aún no golpea.
+    tiempoDesdeGolpe: Infinity,
+  };
 }
 
 // Mientras siga sucio, el chorro lo puede tocar.
@@ -39,7 +50,23 @@ function avanzarHaciaElPozo(enemigo, radioPozo, dt) {
     enemigo.x -= (enemigo.x / distancia) * paso;
     enemigo.z -= (enemigo.z / distancia) * paso;
   }
-  if (distancia - Math.max(paso, 0) <= parada) enemigo.estado = ESTADOS.EN_POZO;
+  if (distancia - Math.max(paso, 0) <= parada) {
+    enemigo.estado = ESTADOS.EN_POZO;
+    enemigo.espera = enemigo.tipo.intervaloGolpe;
+  }
+}
+
+// Golpea el pozo cada `intervaloGolpe` segundos. Devuelve la contaminación (%) que causó en este paso.
+function golpearElPozo(enemigo, dt) {
+  enemigo.espera -= dt;
+  enemigo.tiempoDesdeGolpe += dt;
+  let contaminacion = 0;
+  while (enemigo.espera <= 0) {
+    contaminacion += enemigo.tipo.contaminacion;
+    enemigo.espera += enemigo.tipo.intervaloGolpe;
+    enemigo.tiempoDesdeGolpe = enemigo.tipo.intervaloGolpe - enemigo.espera;
+  }
+  return contaminacion;
 }
 
 function alejarseDelPozo(enemigo, { mapa, margenSalida }, dt) {
@@ -52,20 +79,22 @@ function alejarseDelPozo(enemigo, { mapa, margenSalida }, dt) {
   }
 }
 
-// Avanza un enemigo dt segundos. `entorno` trae radioPozo, potencia, regeneracion,
-// pausaAlLimpiarse, mapa y margenSalida.
+// Avanza un enemigo dt segundos y devuelve la contaminación (%) que le causó al pozo en este paso.
+// `entorno` trae radioPozo, potencia, regeneracion, pausaAlLimpiarse, mapa y margenSalida.
 export function actualizarEnemigo(enemigo, recibeAgua, entorno, dt) {
   if (esObjetivo(enemigo) && aplicarAgua(enemigo, recibeAgua, entorno, dt)) {
     // Queda limpio: se detiene un momento y después se retira.
     enemigo.estado = ESTADOS.LIMPIO;
     enemigo.espera = entorno.pausaAlLimpiarse;
-    return;
+    return 0;
   }
 
   switch (enemigo.estado) {
     case ESTADOS.AVANZANDO:
       avanzarHaciaElPozo(enemigo, entorno.radioPozo, dt);
       break;
+    case ESTADOS.EN_POZO:
+      return golpearElPozo(enemigo, dt);
     case ESTADOS.LIMPIO:
       enemigo.espera -= dt;
       if (enemigo.espera <= 0) enemigo.estado = ESTADOS.RETIRANDOSE;
@@ -74,4 +103,5 @@ export function actualizarEnemigo(enemigo, recibeAgua, entorno, dt) {
       alejarseDelPozo(enemigo, entorno, dt);
       break;
   }
+  return 0;
 }

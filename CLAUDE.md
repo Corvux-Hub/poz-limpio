@@ -7,7 +7,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - El pozo está al centro del mapa. Es la base y lo que hay que proteger.
 - Del pozo sale siempre una **manguera roja**, que es el arma. Apunta hacia donde el jugador dirige el cursor.
 - Los atacantes son ciudadanos de cualquier urbe. Cuanto más sucios, más difíciles son. Cuanto más grandes u obesos, más tardan en limpiarse.
-- Algunos llevan armas improvisadas (palos, escobas, tubos). Estas aumentan su alcance de ataque y su daño al pozo.
+- Algunos llevan armas improvisadas (palos, escobas, tubos). Estas aumentan su alcance de ataque y cuánto contaminan el pozo.
 - Un enemigo se derrota cuando acumula suficiente **tiempo de exposición** al agua limpia. Mientras recibe agua, su color se aclara visualmente.
 - Entre oleadas el jugador mejora el pozo y la manguera.
 - Tono: tensión y atmósfera oscura, sin gore. Los enemigos "se purifican", no mueren.
@@ -69,21 +69,24 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
 
 ## Pozo y mejoras
 
-- El pozo tiene **integridad** (vida). Los enemigos la reducen al llegar a él y golpearlo.
+- El pozo tiene un **porcentaje de contaminación**: 0 % es agua limpia y 100 % es la derrota.
+- Los enemigos que llegan lo golpean cada `intervaloGolpe` segundos y cada golpe suma su `contaminacion` (%). No baja sola.
+- El agua del pozo pasa de azul a café según el porcentaje, y el HUD lo muestra en una barra.
+- La lógica vive en `src/systems/contaminacion.js`.
 - La manguera tiene **presión** (reserva de agua). Se agota al disparar y se recarga con pausas.
 - Mejoras entre oleadas (todas definidas en `data/upgrades.json`):
   - potencia del chorro
   - alcance
   - ancho del chorro
   - reserva y recarga de presión
-  - reparación y ampliación del pozo
+  - purificación (baja la contaminación) y ampliación del pozo
   - segunda manguera (mejora tardía)
 
 ## Datos primero
 
 Nada de números mágicos en el código. Todo el balance vive en JSON dentro de `src/data/`:
 
-- `enemies.json`: suciedad, tamaño, velocidad, daño, alcance, color base y color limpio.
+- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, color base y color limpio.
 - `waves.json`: composición, cantidad, ritmo y puntos de aparición de cada oleada.
 - `upgrades.json`: efectos, niveles y costos.
 - `config.json`: presión, regeneración de exposición, tiempos entre oleadas y demás parámetros globales.
@@ -96,7 +99,7 @@ src/
   core/            # escena, cámara, input, estados del juego
   entities/        # pozo, manguera, enemigos, proyectil de agua
   systems/         # oleadas, limpieza, colisiones, mejoras
-  ui/              # HUD: integridad, presión, oleada, menú de mejoras
+  ui/              # HUD: contaminación, presión, oleada, menú de mejoras
   data/            # JSON de balance
 public/models/     # GLB finales (vacío al inicio)
 ```
@@ -117,7 +120,7 @@ public/models/     # GLB finales (vacío al inicio)
 1. **Esqueleto**: Vite + Three.js, cámara fija, suelo, pozo y manguera roja que sigue al cursor.
 2. **Chorro**: clic mantenido dispara agua visible (partículas o línea simple), con detección de impacto contra enemigos.
 3. **Un enemigo**: camina hacia el pozo, recibe agua, se aclara de color y se limpia según la fórmula.
-4. **Daño al pozo**: los enemigos llegan, golpean y bajan la integridad. Pantalla de derrota.
+4. **Contaminación del pozo**: los enemigos llegan, golpean y suben el porcentaje de contaminación. Pantalla de derrota al 100 %.
 5. **Oleadas**: generador desde `waves.json`, pausa entre oleadas, contador y escalado.
 6. **Mejoras**: menú entre oleadas con `upgrades.json` y efectos reales.
 7. **Variedad**: más tipos de enemigo y armas improvisadas con alcance distinto.

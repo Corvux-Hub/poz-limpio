@@ -8,6 +8,8 @@ const RADIO_CABEZA = 0.16;
 const SEGMENTOS = 16;
 // Vaivén al caminar, puramente visual.
 const PASO = { frecuencia: 9, altura: 0.05 };
+// Embestida hacia el pozo en cada golpe, puramente visual (metros y segundos).
+const EMBESTIDA = { distancia: 0.35, duracion: 0.3 };
 // Tono azulado mientras recibe agua y qué tan rápido (1/s) aparece o se va.
 const BRILLO_MOJADO = new THREE.Color(0x1d5f86);
 const RESPUESTA_BRILLO = 10;
@@ -46,6 +48,14 @@ export function crearEnemigoVisual({ tipo, radio }) {
       const caminando = enemigo.estado === ESTADOS.AVANZANDO || enemigo.estado === ESTADOS.RETIRANDOSE;
       if (caminando) fase += PASO.frecuencia * dt;
       figura.position.y = caminando ? Math.abs(Math.sin(fase)) * PASO.altura : 0;
+
+      // Se lanza hacia el pozo y regresa justo después de cada golpe.
+      const avanceGolpe = enemigo.tiempoDesdeGolpe / EMBESTIDA.duracion;
+      const golpeando = enemigo.estado === ESTADOS.EN_POZO && avanceGolpe < 1;
+      const embestida = golpeando ? Math.sin(Math.PI * avanceGolpe) * EMBESTIDA.distancia : 0;
+      const distancia = Math.hypot(enemigo.x, enemigo.z) || 1;
+      figura.position.x = (-enemigo.x / distancia) * embestida;
+      figura.position.z = (-enemigo.z / distancia) * embestida;
 
       material.color.lerpColors(colorBase, colorLimpio, progreso);
       mojado += ((recibeAgua ? 1 : 0) - mojado) * (1 - Math.exp(-RESPUESTA_BRILLO * dt));

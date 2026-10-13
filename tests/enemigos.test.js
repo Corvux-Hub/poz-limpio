@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { aplicarAgua, progresoDeLimpieza, tiempoDeLimpieza } from '../src/systems/limpieza.js';
 import { ESTADOS, actualizarEnemigo, crearEnemigo, esObjetivo, puntoEnBorde } from '../src/systems/enemigos.js';
 
-const PEATON = { suciedad: 3, tamano: 1, velocidad: 1, alcance: 0.5 };
+const PEATON = { suciedad: 3, tamano: 1, velocidad: 1, alcance: 0.5, contaminacion: 5, intervaloGolpe: 1.5 };
 const MAPA = { ancho: 20, alto: 10 };
 const ENTORNO = {
   radioPozo: 1,
@@ -15,8 +15,19 @@ const ENTORNO = {
 };
 const cerca = (a, b, tolerancia = 1e-6) => Math.abs(a - b) < tolerancia;
 
+// Devuelve la contaminación total que causó en ese tiempo.
 function simular(enemigo, segundos, dt, recibeAgua) {
-  for (let i = 0; i < Math.round(segundos / dt); i++) actualizarEnemigo(enemigo, recibeAgua, ENTORNO, dt);
+  let contaminacion = 0;
+  for (let i = 0; i < Math.round(segundos / dt); i++) contaminacion += actualizarEnemigo(enemigo, recibeAgua, ENTORNO, dt);
+  return contaminacion;
+}
+
+// Un peatón ya parado frente al pozo.
+function enemigoEnPozo() {
+  const enemigo = crearEnemigo(1, PEATON, { x: 1.9, z: 0 }, 0.4);
+  simular(enemigo, 0.01, 0.01, false);
+  assert.equal(enemigo.estado, ESTADOS.EN_POZO);
+  return enemigo;
 }
 
 test('tiempoDeLimpieza coincide con la tabla de referencia del diseño', () => {
@@ -98,4 +109,33 @@ test('puntoEnBorde siempre cae sobre el borde del mapa', () => {
     const enBordeHorizontal = cerca(Math.abs(z), MAPA.alto / 2) && Math.abs(x) <= MAPA.ancho / 2 + 1e-9;
     assert.ok(enBordeVertical || enBordeHorizontal, `t=${t} → (${x}, ${z})`);
   }
+});
+
+test('mientras camina no contamina el pozo', () => {
+  const enemigo = crearEnemigo(1, PEATON, { x: 10, z: 0 }, 0.4);
+  assert.equal(simular(enemigo, 5, 0.01, false), 0);
+});
+
+test('frente al pozo lo golpea cada intervaloGolpe y cada golpe suma su contaminación', () => {
+  const enemigo = enemigoEnPozo();
+  assert.equal(simular(enemigo, 1.4, 0.01, false), 0);
+  assert.equal(enemigo.tiempoDesdeGolpe, Infinity);
+  assert.equal(simular(enemigo, 0.2, 0.01, false), 5);
+  assert.ok(enemigo.tiempoDesdeGolpe < 0.2);
+  assert.equal(simular(enemigo, 3, 0.01, false), 10);
+});
+
+test('los golpes no dependen de los FPS', () => {
+  const lento = enemigoEnPozo();
+  const rapido = enemigoEnPozo();
+  // 5.5 s: tres golpes (1.5, 3 y 4.5 s), lejos de un límite donde el redondeo decida.
+  assert.equal(simular(lento, 5.5, 0.1, false), 15);
+  assert.equal(simular(rapido, 5.5, 0.01, false), 15);
+});
+
+test('limpio deja de contaminar aunque esté frente al pozo', () => {
+  const enemigo = enemigoEnPozo();
+  simular(enemigo, 3, 0.01, true);
+  assert.equal(enemigo.estado, ESTADOS.LIMPIO);
+  assert.equal(simular(enemigo, 0.5, 0.01, false), 0);
 });
