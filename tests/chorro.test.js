@@ -113,3 +113,18 @@ test('con menos caudal salen proporcionalmente menos gotas', () => {
   for (let i = 0; i < 40; i++) actualizarChorro(chorro, { ...disparo(true), caudal: 0.5 }, [], CONFIG, 0.01);
   assert.equal(chorro.gotas.length, 0.5 * CONFIG.cadencia * 0.4);
 });
+
+test('anota dónde pega cada gota: en el borde del objetivo, del lado del chorro', () => {
+  const chorro = crearChorro();
+  const objetivo = { id: 'frente', x: 3, z: 0, radio: 0.4 };
+  let salpicaduras = [];
+  for (let i = 0; i < 50 && salpicaduras.length === 0; i++) {
+    actualizarChorro(chorro, disparo(true), [objetivo], CONFIG, 0.01);
+    salpicaduras = chorro.salpicaduras;
+  }
+  assert.ok(salpicaduras.length > 0);
+  // Radio del objetivo (0.4) más el ancho del chorro (0.1): entra a 2.5 m del origen.
+  for (const { x, z } of salpicaduras) assert.ok(cerca(x, 2.5, 1e-6) && cerca(z, 0, 1e-6));
+  actualizarChorro(chorro, disparo(false), [], CONFIG, 0.5);
+  assert.equal(chorro.salpicaduras.length, 0);
+});

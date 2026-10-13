@@ -20,6 +20,7 @@ import { crearPozo } from './entities/pozo.js';
 import { crearJugador } from './entities/jugador.js';
 import { crearChorroVisual } from './entities/chorro.js';
 import { crearEnemigoVisual } from './entities/enemigo.js';
+import { crearSalpicaduras } from './entities/salpicaduras.js';
 import { crearHud } from './ui/hud.js';
 import { crearMenuMejoras } from './ui/mejoras.js';
 import { crearEtiquetasFlotantes } from './ui/etiquetas.js';
@@ -45,7 +46,8 @@ const escenario = crearEscenario({
 });
 const pozo = crearPozo(config.pozo);
 const jugador = crearJugador(pozo, config.avatar);
-escena.add(escenario.grupo, pozo.grupo, jugador.grupo);
+const salpicaduras = crearSalpicaduras();
+escena.add(escenario.grupo, pozo.grupo, jugador.grupo, salpicaduras.grupo);
 // En orden de apilado: las etiquetas quedan debajo del HUD y de las pantallas.
 const etiquetas = crearEtiquetasFlotantes(document.body);
 const hud = crearHud(document.body);
@@ -75,6 +77,7 @@ function reiniciar() {
   estado = 'jugando';
   rehacerChorroVisual();
   etiquetas.limpiar();
+  salpicaduras.limpiar();
   hud.ocultarDerrota();
   hud.ocultarPausa();
   menuMejoras.ocultar();
@@ -199,6 +202,8 @@ function cuadro(tiempo) {
   jugador.sincronizar(partida.apuntado, jugando && input.disparando(), dtVisual);
   pozo.sincronizar(partida.contaminacion.porcentaje, dtVisual);
   chorroVisual.sincronizar(partida.chorro);
+  if (jugando) salpicaduras.emitir(partida.chorro.salpicaduras);
+  salpicaduras.actualizar(dtVisual);
   sincronizarEnemigos(dtVisual);
   for (const enemigo of limpiados) {
     etiquetas.agregar(`+${enemigo.tipo.recompensa}`, { x: enemigo.x, y: ALTURA_RECOMPENSA, z: enemigo.z });

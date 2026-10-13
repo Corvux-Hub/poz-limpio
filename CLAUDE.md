@@ -31,7 +31,7 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - El chorro son gotas que salen de la punta de la boquilla y viajan en línea recta (`velocidad`, `alcance`, `cadencia` y `ancho` en `config.json`).
 - Una gota se detiene en el primer cuerpo que toca: los enemigos de adelante cubren a los de atrás.
 - Al barrer con la manguera, el agua ya disparada conserva su dirección; al soltar, termina de caer.
-- La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó.
+- La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó. También anota en `chorro.salpicaduras` dónde pegó cada gota, para dibujar ahí gotitas que saltan (`src/entities/salpicaduras.js`).
 - En la lógica el agua sale del cuerpo del avatar, no de la punta de la boquilla, para que también limpie a quien esté pegado a ella. Se dibuja desde la punta.
 
 ## Enemigos
@@ -46,6 +46,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Estados en `src/systems/enemigos.js`: `avanzando` → `en_pozo` → `limpio` → `retirandose` → `fuera`. La exposición vive en `src/systems/limpieza.js`.
 - Los sucios no se enciman: `separarEnemigos` los aparta, y el que ya golpea el pozo no se deja empujar (los demás hacen fila o lo rodean).
 - Miran al pozo mientras avanzan y golpean; al retirarse le dan la espalda. El tamaño los hace más anchos, no más altos.
+- Aspecto provisional con primitivas (`src/entities/enemigo.js`): cuerpo humano con brazos y piernas que se balancean al caminar, panza si son grandes, y los `accesorios` de su `aspecto` en `enemies.json` (`gorra`, `casco`, `corbata`, `chaleco`) en `colorAccesorio`.
+- Mientras están sucios despiden un brillo verdoso tenue ("tóxico") que se apaga al limpiarse; así se distinguen del asfalto oscuro.
 
 ## Armas improvisadas
 
@@ -90,7 +92,21 @@ Las armas multiplican el golpe (palo ×1.3, escoba ×1.2, tubo ×1.6).
 
 - Referencia visual: `docs/referencias/avatar.jpg`.
 - Camisa blanca de manga larga con emblema naranja en el pecho, cinturón negro, pantalón gris oscuro, zapatos café oscuro y cabello oscuro peinado hacia atrás.
-- Mientras no haya GLB, se arma con primitivas usando esa paleta (`src/entities/avatar.js`).
+- Mientras no haya GLB, se arma con primitivas usando esa paleta (`src/entities/avatar.js`): manga doblada al antebrazo, cuello abierto con collar y emblema con un poco de brillo para que se note de noche.
+- Respira en reposo y, al disparar, retrocede un poco y vibra con la presión del agua (`src/entities/jugador.js`; solo visual).
+
+## Escenario
+
+- Un cruce de avenidas de noche (`src/entities/escenario.js`): el pozo ocupa la glorieta del centro, con pasos de cebra, carriles, charcos, coladeras, basura, coches abandonados, árboles, semáforos y faroles de sodio (uno parpadea).
+- Todo se genera con una semilla fija: el mapa se ve igual en cada partida.
+- Nada con volumen dentro del rectángulo de aparición de los enemigos (mapa + `margenAparicion`): ahí solo hay marcas planas en el suelo.
+- Los edificios altos van solo al fondo (arriba en pantalla); a los lados, medianos; cerca de la cámara, solo locales bajos, para que no tapen el juego.
+- Los faroles cercanos a la cámara aportan luz pero no se dibujan, por la misma razón.
+
+## El pozo (aspecto)
+
+- Brocal de hileras de piedra con tono variable, dos postes de madera con travesaño, manivela, cuerda y cubeta (`src/entities/pozo.js`).
+- El agua respira, hace ondas y alumbra en azul. Con la contaminación se enturbia (más rápido al principio), su luz se apaga y aparecen desechos flotando (uno por cada 10 %).
 
 ## Pozo y mejoras
 
@@ -133,7 +149,7 @@ Las armas multiplican el golpe (palo ×1.3, escoba ×1.2, tubo ×1.6).
 
 Nada de números mágicos en el código. Todo el balance vive en JSON dentro de `src/data/`:
 
-- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, recompensa, arma por defecto, color base y color limpio.
+- `enemies.json`: suciedad, tamaño, velocidad, alcance, contaminación por golpe, intervalo entre golpes, recompensa, arma por defecto, color base, color limpio y aspecto (accesorios).
 - `armas.json`: alcance extra, multiplicador de contaminación y aspecto de cada arma improvisada.
 - `waves.json`: composición, cantidad, ritmo y puntos de aparición de cada oleada.
 - `upgrades.json`: efectos, niveles y costos.
