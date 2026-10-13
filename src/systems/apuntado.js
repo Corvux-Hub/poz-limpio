@@ -15,6 +15,11 @@ export function diferenciaAngular(desde, hasta) {
   return normalizarAngulo(hasta - desde);
 }
 
+// Punto a `distancia` de `origen` en la dirección `angulo`.
+export function puntoEnDireccion(origen, angulo, distancia) {
+  return { x: origen.x + Math.cos(angulo) * distancia, z: origen.z + Math.sin(angulo) * distancia };
+}
+
 export function crearApuntado(anguloInicial = 0) {
   return { angulo: normalizarAngulo(anguloInicial) };
 }

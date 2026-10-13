@@ -41,5 +41,5 @@ export function crearManguera(pozo, agarre, escalaAvatar) {
 
   const grupo = new THREE.Group();
   grupo.add(manguera, boquilla);
-  return { grupo };
+  return { grupo, punta: new THREE.Vector3(agarre.x + largo, agarre.y, agarre.z) };
 }

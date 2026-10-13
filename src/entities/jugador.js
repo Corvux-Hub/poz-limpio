@@ -17,6 +17,9 @@ export function crearJugador(pozo, { escala, distanciaAlBrocal }) {
 
   return {
     grupo: pivote,
+    // La boquilla queda sobre el eje radial del pivote (z = 0): su punta está a esta distancia del eje del pozo.
+    distanciaPunta: manguera.punta.x,
+    alturaPunta: manguera.punta.y,
     // El ángulo lógico va de +x hacia +z; en Three.js, rotation.y positiva gira de +x hacia -z.
     sincronizar(apuntado) {
       pivote.rotation.y = -apuntado.angulo;

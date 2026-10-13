@@ -1,27 +1,49 @@
 import * as THREE from 'three';
 
-// Traduce el cursor a un punto del suelo (y = 0) con un raycast desde la cámara.
-export function crearInput(canvas, camara) {
+// Traduce el cursor a un punto de un plano horizontal (raycast desde la cámara) y lleva el estado del clic.
+// El plano va a la altura de la cintura: con la cámara inclinada, poner el cursor sobre el cuerpo
+// de alguien apunta a ese alguien y no al suelo detrás de él.
+export function crearInput(canvas, camara, alturaPlano) {
   const raycaster = new THREE.Raycaster();
-  const planoSuelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), -alturaPlano);
   const cursor = new THREE.Vector2();
   const punto = new THREE.Vector3();
   let cursorDentro = false;
+  let disparando = false;
 
-  canvas.addEventListener('pointermove', (evento) => {
+  const leerCursor = (evento) => {
     const rect = canvas.getBoundingClientRect();
     cursor.x = ((evento.clientX - rect.left) / rect.width) * 2 - 1;
     cursor.y = -((evento.clientY - rect.top) / rect.height) * 2 + 1;
     cursorDentro = true;
+  };
+
+  canvas.addEventListener('pointermove', leerCursor);
+  canvas.addEventListener('pointerdown', (evento) => {
+    if (evento.button !== 0) return;
+    leerCursor(evento);
+    disparando = true;
+    // Sigue recibiendo movimientos aunque el cursor salga del canvas con el botón apretado.
+    canvas.setPointerCapture(evento.pointerId);
+  });
+  canvas.addEventListener('pointerup', (evento) => {
+    if (evento.button === 0) disparando = false;
+  });
+  canvas.addEventListener('lostpointercapture', () => {
+    disparando = false;
+  });
+  window.addEventListener('blur', () => {
+    disparando = false;
   });
 
   return {
     // Se recalcula cada cuadro porque el encuadre cambia al redimensionar aunque el ratón no se mueva.
     // Devuelve null mientras el cursor no haya entrado al canvas.
-    puntoEnSuelo() {
+    puntoApuntado() {
       if (!cursorDentro) return null;
       raycaster.setFromCamera(cursor, camara);
-      return raycaster.ray.intersectPlane(planoSuelo, punto);
+      return raycaster.ray.intersectPlane(plano, punto);
     },
+    disparando: () => disparando,
   };
 }

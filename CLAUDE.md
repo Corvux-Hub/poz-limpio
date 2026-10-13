@@ -21,10 +21,17 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 
 ## Controles (v1)
 
-- Ratón: la manguera apunta al cursor (raycast contra el plano del suelo).
+- Ratón: la manguera apunta al cursor (raycast contra un plano horizontal a la altura de la cintura, `apuntado.alturaPlano`, para que apuntar al cuerpo de alguien le apunte a él y no al suelo detrás).
 - Clic izquierdo mantenido: dispara el chorro.
 - Tecla Espacio o Esc: pausa.
 - Soporte táctil: fuera de alcance por ahora.
+
+## Chorro
+
+- El chorro son gotas que salen de la punta de la boquilla y viajan en línea recta (`velocidad`, `alcance`, `cadencia` y `ancho` en `config.json`).
+- Una gota se detiene en el primer cuerpo que toca: los enemigos de adelante cubren a los de atrás.
+- Al barrer con la manguera, el agua ya disparada conserva su dirección; al soltar, termina de caer.
+- La lógica vive en `src/systems/chorro.js` (sin Three.js) y devuelve cada cuadro qué objetivos tocó.
 
 ## Mecánica central: limpieza
 

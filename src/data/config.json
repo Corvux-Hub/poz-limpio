@@ -20,5 +20,26 @@
     "escala": 1.5,
     "distanciaAlBrocal": 0.5,
     "velocidadGiro": 10
+  },
+  "apuntado": {
+    "alturaPlano": 1
+  },
+  "chorro": {
+    "velocidad": 14,
+    "alcance": 6,
+    "cadencia": 60,
+    "ancho": 0.12
+  },
+  "dianasDePrueba": {
+    "radio": 0.35,
+    "posiciones": [
+      [5.5, 0],
+      [8, 0],
+      [-5, 3],
+      [-2, -5.5],
+      [4, -4.5],
+      [-6.5, -2.5],
+      [2, 5.5]
+    ]
   }
 }
