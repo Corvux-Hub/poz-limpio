@@ -1,5 +1,5 @@
 // HUD en HTML sobre el canvas: contaminación del pozo, presión de la manguera, agua limpia,
-// oleada, avisos y pantallas de pausa y derrota.
+// oleada, avisos, estado del sonido y pantallas de inicio, pausa y derrota.
 import { FASES } from '../systems/oleadas.js';
 
 // Color de la barra: azul con el pozo limpio, café cuando está contaminado.
@@ -55,14 +55,28 @@ export function crearHud(contenedor) {
       <div class="hud-oleada-numero"></div>
       <div class="hud-oleada-quedan"></div>
     </div>
+    <div class="hud-sonido"></div>
     <div class="hud-aviso" hidden>
       <div class="hud-aviso-titulo"></div>
       <div class="hud-aviso-detalle"></div>
     </div>
+    <div class="pantalla inicio" hidden>
+      <div class="pantalla-tarjeta">
+        <h1 class="inicio-titulo">Pozo Limpio</h1>
+        <p>Defiende el último pozo de agua limpia. Aquí nadie sale herido: a los contaminados se les limpia.</p>
+        <ul class="inicio-controles">
+          <li><kbd>Ratón</kbd> apunta la manguera</li>
+          <li><kbd>Clic mantenido</kbd> dispara el agua</li>
+          <li><kbd>Suelta</kbd> un momento para recargar la presión</li>
+          <li><kbd>Espacio</kbd> o <kbd>Esc</kbd> pausa · <kbd>M</kbd> sonido</li>
+        </ul>
+        <button type="button">Empezar</button>
+      </div>
+    </div>
     <div class="pantalla pausa" hidden>
       <div class="pantalla-tarjeta">
         <h1>Pausa</h1>
-        <p>Presiona Espacio o Esc para continuar.</p>
+        <p>Presiona Espacio o Esc para continuar. M silencia el sonido.</p>
         <button type="button">Continuar</button>
       </div>
     </div>
@@ -88,6 +102,8 @@ export function crearHud(contenedor) {
   const aviso = raiz.querySelector('.hud-aviso');
   const avisoTitulo = raiz.querySelector('.hud-aviso-titulo');
   const avisoDetalle = raiz.querySelector('.hud-aviso-detalle');
+  const sonido = raiz.querySelector('.hud-sonido');
+  const inicio = crearPantalla(raiz, '.inicio');
   const pausa = crearPantalla(raiz, '.pausa');
   const derrota = crearPantalla(raiz, '.derrota');
   const resumen = raiz.querySelector('.derrota-resumen');
@@ -141,6 +157,21 @@ export function crearHud(contenedor) {
         escribir(avisoTitulo, numero === 1 ? 'Defiende el pozo' : `Oleada ${numero}`);
         escribir(avisoDetalle, `Empieza en ${Math.ceil(segundos)}`);
       }
+    },
+
+    actualizarSonido(silenciado) {
+      escribir(sonido, silenciado ? 'Sonido apagado · M' : 'Sonido · M');
+      sonido.classList.toggle('apagado', silenciado);
+    },
+
+    mostrarInicio(alEmpezar) {
+      raiz.classList.add('inicio-abierto');
+      inicio.mostrar(alEmpezar);
+      inicio.boton.focus();
+    },
+    ocultarInicio() {
+      raiz.classList.remove('inicio-abierto');
+      inicio.ocultar();
     },
 
     mostrarPausa: (alContinuar) => pausa.mostrar(alContinuar),

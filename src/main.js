@@ -7,6 +7,7 @@ import armas from './data/armas.json';
 import { crearEscena } from './core/escena.js';
 import { ajustarCamara, crearCamara } from './core/camara.js';
 import { crearInput } from './core/input.js';
+import { crearSonido } from './core/sonido.js';
 import {
   avanzarPartida,
   comprarMejora,
@@ -26,18 +27,23 @@ import { crearMenuMejoras } from './ui/mejoras.js';
 import { crearEtiquetasFlotantes } from './ui/etiquetas.js';
 import { esObjetivo } from './systems/enemigos.js';
 import { estaRecibiendoAgua, progresoDeLimpieza } from './systems/limpieza.js';
-import { porAparecer } from './systems/oleadas.js';
+import { FASES, porAparecer } from './systems/oleadas.js';
 import { estadoDeMejora } from './systems/mejoras.js';
 import { estaSinPresion } from './systems/presion.js';
 
 const datos = { config, tipos: tiposDeEnemigo, armas, oleadas: datosOleadas, mejoras: catalogoMejoras };
 // Altura (m) desde la que sube el "+N" de agua limpia al limpiar a alguien.
 const ALTURA_RECOMPENSA = 2.3;
+// Contaminación (%) de un golpe que suena con toda su fuerza (el jefe con tubo pega 12.8).
+const GOLPE_FUERTE = 12;
+// Últimos segundos de la cuenta regresiva que suenan con un tic.
+const TICS = 3;
 
 const contenedor = document.getElementById('juego');
 const { renderer, escena } = crearEscena(contenedor, config.mapa);
 const camara = crearCamara(config.camara);
 const input = crearInput(renderer.domElement, camara, config.apuntado.alturaPlano);
+const sonido = crearSonido(config.sonido);
 
 // El decorado con altura queda por fuera del rectángulo donde aparecen los enemigos.
 const escenario = crearEscenario({
@@ -53,9 +59,11 @@ const etiquetas = crearEtiquetasFlotantes(document.body);
 const hud = crearHud(document.body);
 const menuMejoras = crearMenuMejoras(document.body, catalogoMejoras);
 
-// Estado lógico (sin Three.js) y estado de la pantalla: jugando, pausa, mejoras o derrota.
+// Estado lógico (sin Three.js) y estado de la pantalla: inicio, jugando, pausa, mejoras o derrota.
 let partida;
 let estado;
+// Lo visto en el cuadro anterior, para reaccionar una sola vez a cada cambio (sonidos).
+let anterior;
 
 // El chorro visual depende del alcance y el ancho, así que se rehace cuando cambian.
 let chorroVisual = null;
@@ -72,12 +80,24 @@ function rehacerChorroVisual() {
   escena.add(chorroVisual.grupo);
 }
 
-function reiniciar() {
+function nuevaPartida() {
   partida = crearPartida(datos);
-  estado = 'jugando';
+  anterior = { fase: partida.oleadas.fase, segundos: null, sinPresion: false };
   rehacerChorroVisual();
   etiquetas.limpiar();
   salpicaduras.limpiar();
+}
+
+// El clic en "Empezar" es el gesto que el navegador pide para dejar sonar el audio.
+function empezar() {
+  sonido.activar();
+  hud.ocultarInicio();
+  estado = 'jugando';
+}
+
+function reiniciar() {
+  nuevaPartida();
+  estado = 'jugando';
   hud.ocultarDerrota();
   hud.ocultarPausa();
   menuMejoras.ocultar();
@@ -86,16 +106,20 @@ function reiniciar() {
 function pausar() {
   if (estado !== 'jugando') return;
   estado = 'pausa';
+  sonido.pausar(true);
   hud.mostrarPausa(reanudar);
 }
 
 function reanudar() {
   if (estado !== 'pausa') return;
   estado = 'jugando';
+  sonido.pausar(false);
   hud.ocultarPausa();
 }
 
 input.alPedirPausa(() => (estado === 'pausa' ? reanudar() : pausar()));
+input.alPedirSilencio(() => hud.actualizarSonido(sonido.alternarSilencio()));
+hud.actualizarSonido(sonido.silenciado);
 // Si el jugador cambia de ventana o de pestaña, la partida se pausa sola.
 window.addEventListener('blur', pausar);
 document.addEventListener('visibilitychange', () => {
@@ -116,6 +140,7 @@ function abrirMejoras() {
 
 function alComprarMejora(id) {
   if (!comprarMejora(partida, datos, id)) return;
+  sonido.compra();
   rehacerChorroVisual();
   refrescarMenuMejoras();
 }
@@ -143,6 +168,7 @@ function jugar(dt) {
   const limpiados = avanzarPartida(partida, datos, entrada, dt);
   if (perdio(partida)) {
     estado = 'derrota';
+    sonido.derrota();
     hud.mostrarDerrota({ oleada: partida.oleadas.numero, limpiados: partida.limpiados }, reiniciar);
   } else if (esperaMejoras(partida)) {
     abrirMejoras();
@@ -183,9 +209,57 @@ function sincronizarEnemigos(dt) {
   }
 }
 
+// 0 con el pozo fuera de peligro; de 0 a 1 entre el umbral de peligro y el 100 %.
+function peligro() {
+  const { porcentaje } = partida.contaminacion;
+  const umbral = config.pozo.peligro;
+  if (porcentaje < umbral) return 0;
+  return Math.max((porcentaje - umbral) / (100 - umbral), 0.01);
+}
+
+// Sonidos de lo que pasó en el último paso: golpes al pozo, limpiezas y cambios de oleada o de presión.
+function sonarEventos(limpiados) {
+  const { oleadas } = partida;
+  if (oleadas.fase !== anterior.fase) {
+    if (oleadas.fase === FASES.EN_CURSO) sonido.oleadaEmpieza();
+    if (oleadas.fase === FASES.SUPERADA) sonido.oleadaSuperada();
+    anterior.fase = oleadas.fase;
+  }
+  const segundos = oleadas.fase === FASES.DESCANSO ? Math.ceil(oleadas.espera) : null;
+  if (segundos !== null && segundos !== anterior.segundos && segundos <= TICS) sonido.tic();
+  anterior.segundos = segundos;
+
+  const sinPresion = estaSinPresion(partida.presion);
+  if (sinPresion && !anterior.sinPresion) sonido.sinPresion();
+  anterior.sinPresion = sinPresion;
+
+  for (const golpe of partida.golpes) sonido.golpePozo(Math.min(golpe.contaminacion / GOLPE_FUERTE, 1));
+  for (const enemigo of limpiados) sonido.limpio(enemigo.tipo.tamano);
+}
+
+// Capas continuas: el chorro, el agua que pega en alguien y el latido con el pozo en peligro.
+function sincronizarSonido(jugando, dt) {
+  const disparando = jugando && input.disparando();
+  const sinPresion = disparando && estaSinPresion(partida.presion);
+  const gotasPorPaso = partida.ajustes.chorro.cadencia * dt;
+  sonido.actualizar(
+    {
+      disparando,
+      caudal: sinPresion ? partida.ajustes.presion.caudalSinPresion : 1,
+      sinPresion,
+      impacto: jugando && gotasPorPaso > 0 ? Math.min(partida.chorro.salpicaduras.length / gotasPorPaso, 1) : 0,
+      peligro: jugando ? peligro() : 0,
+    },
+    dt,
+  );
+}
+
 const NINGUNO = [];
 let tiempoAnterior = performance.now();
-reiniciar();
+nuevaPartida();
+// El juego espera detrás de la pantalla de inicio.
+estado = 'inicio';
+hud.mostrarInicio(empezar);
 
 function cuadro(tiempo) {
   // Se limita dt para que volver de otra pestaña no produzca un salto enorme.
@@ -208,6 +282,8 @@ function cuadro(tiempo) {
   for (const enemigo of limpiados) {
     etiquetas.agregar(`+${enemigo.tipo.recompensa}`, { x: enemigo.x, y: ALTURA_RECOMPENSA, z: enemigo.z });
   }
+  if (jugando) sonarEventos(limpiados);
+  sincronizarSonido(jugando, dtVisual);
   etiquetas.actualizar(camara, contenedor.clientWidth, contenedor.clientHeight, dtVisual);
   sincronizarHud();
   renderer.render(escena, camara);

@@ -15,7 +15,8 @@
   "pozo": {
     "radio": 1.4,
     "altoBrocal": 0.9,
-    "factorContaminacion": 1
+    "factorContaminacion": 1,
+    "peligro": 70
   },
   "avatar": {
     "escala": 1.5,
@@ -52,5 +53,8 @@
     "esperaInicial": 3,
     "celebracion": 1.5,
     "descanso": 3
+  },
+  "sonido": {
+    "volumen": 0.7
   }
 }

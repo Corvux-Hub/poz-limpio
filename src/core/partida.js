@@ -38,6 +38,8 @@ export function crearPartida(datos) {
     chorro: crearChorro(),
     presion: crearPresion(datos.config.presion.reserva),
     enemigos: [],
+    // Golpes al pozo del último paso: { x, z, contaminacion } de quien golpeó (para sonido y efectos).
+    golpes: [],
     contaminacion: crearContaminacion(),
     oleadas: crearOleadas(datos.config.oleadas.esperaInicial),
     limpiados: 0,
@@ -97,12 +99,16 @@ export function avanzarPartida(partida, datos, { objetivo, disparando }, dt, ale
     margenSalida: config.enemigos.margenSalida,
   };
   const limpiados = [];
+  partida.golpes = [];
   for (const enemigo of partida.enemigos) {
     const estabaSucio = esObjetivo(enemigo);
     // Cada gota que le pegó equivale a 1/cadencia segundos de chorro.
     const segundosDeAgua = (impactos.get(enemigo.id) ?? 0) / ajustes.chorro.cadencia;
-    const golpes = actualizarEnemigo(enemigo, segundosDeAgua, entorno, dt);
-    contaminar(partida.contaminacion, golpes * ajustes.pozo.factorContaminacion);
+    const contaminacion = actualizarEnemigo(enemigo, segundosDeAgua, entorno, dt) * ajustes.pozo.factorContaminacion;
+    if (contaminacion > 0) {
+      contaminar(partida.contaminacion, contaminacion);
+      partida.golpes.push({ x: enemigo.x, z: enemigo.z, contaminacion });
+    }
     if (estabaSucio && enemigo.estado === ESTADOS.LIMPIO) {
       partida.limpiados++;
       partida.agua += enemigo.tipo.recompensa;

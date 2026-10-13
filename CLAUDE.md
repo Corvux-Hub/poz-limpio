@@ -24,6 +24,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 - Ratón: la manguera apunta al cursor (raycast contra un plano horizontal a la altura de la cintura, `apuntado.alturaPlano`, para que apuntar al cuerpo de alguien le apunte a él y no al suelo detrás).
 - Clic izquierdo mantenido: dispara el chorro.
 - Tecla Espacio o Esc: pausa. La partida también se pausa sola si la ventana pierde el foco.
+- Tecla M: silencia o activa el sonido (se recuerda en `localStorage`).
+- El juego arranca en una pantalla de inicio con los controles; su botón "Empezar" es también el gesto que el navegador exige para dejar sonar el audio.
 - Soporte táctil: fuera de alcance por ahora.
 
 ## Chorro
@@ -144,6 +146,14 @@ Las armas multiplican el golpe (palo ×1.3, escoba ×1.2, tubo ×1.6).
 - `npm run balance` juega muchas partidas con un jugador automático (`herramientas/`) usando la misma lógica que el juego (`src/core/partida.js`) y resume, por oleada, cuántas partidas la superan y con cuánta contaminación, sin mejoras y comprando mejoras.
 - El jugador automático imita a un humano decente: se concentra en un objetivo, tarda en reaccionar al cambiarlo (`--reaccion`) y puede soltar el clic al quedarse sin presión (`--recargar-al 0.5`) o nunca soltarlo (`--recargar-al no`). Apunta perfecto, así que una persona rinde algo peor.
 - Antes y después de cambiar números de balance, correrlo y comparar. Meta actual: sin mejoras se ganan las oleadas 1 a 3 (la 3 deja el pozo a media contaminación); de la 4 en adelante hacen falta mejoras; con mejoras se llega a la 7 u 8 y el escalado termina por ganar.
+
+## Sonido
+
+- Todo se sintetiza con Web Audio en `src/core/sonido.js` (ruido filtrado y osciladores): no hay archivos de audio ni dependencias.
+- Capas continuas: viento y zumbido de la ciudad de fondo; el chorro, que suena más débil y chisporrotea sin presión; el agua que pega en alguien, según qué parte del chorro le da; y un latido mientras la contaminación pasa de `pozo.peligro` (%), más rápido cerca del 100 %.
+- Efectos: golpe al pozo (más fuerte cuanto más contamina), ciudadano limpio (campanitas, más graves si es grande), tic en los últimos segundos de la cuenta regresiva, bramido al empezar la oleada, acorde al superarla, siseo al quedarse sin presión, compra de mejora y derrota.
+- La pausa congela también el audio. El volumen general está en `sonido.volumen` de `config.json`.
+- `main.js` detecta los eventos comparando con el cuadro anterior; la lógica solo los anota (`partida.golpes`, `chorro.salpicaduras` y los limpiados que devuelve `avanzarPartida`).
 
 ## Datos primero
 

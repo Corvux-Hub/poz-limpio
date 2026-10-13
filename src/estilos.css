@@ -133,6 +133,20 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Estado del sonido, discreto en la esquina inferior. */
+.hud-sonido {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  font-size: 12px;
+  color: rgba(232, 237, 242, 0.45);
+  text-shadow: 0 1px 2px #000;
+}
+
+.hud-sonido.apagado {
+  color: rgba(240, 163, 90, 0.7);
+}
+
 /* Aviso entre oleadas, en la parte alta para no tapar el pozo. */
 .hud-aviso {
   position: absolute;
@@ -206,6 +220,48 @@ body {
 .pantalla button:hover,
 .pantalla button:focus-visible {
   background: #3aa0d4;
+}
+
+/* Pantalla de inicio: título y controles. Mientras está abierta, el resto del HUD se oculta. */
+.hud.inicio-abierto > :not(.inicio) {
+  visibility: hidden;
+}
+
+.inicio-titulo {
+  font-size: 44px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.inicio .pantalla-tarjeta > p {
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.inicio-controles {
+  display: grid;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 auto 28px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  font-size: 15px;
+  color: #c8d2dc;
+}
+
+.inicio-controles kbd {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 1px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8edf2;
 }
 
 /* Textos flotantes sobre el mundo ("+10" al limpiar). */

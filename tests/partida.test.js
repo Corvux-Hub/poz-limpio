@@ -72,3 +72,31 @@ test('tras el menú de mejoras arranca la cuenta regresiva de la siguiente olead
   assert.equal(partida.oleadas.fase, FASES.DESCANSO);
   assert.equal(partida.oleadas.numero, 2);
 });
+
+test('anota cada golpe al pozo con la posición de quien golpeó y lo que contaminó', () => {
+  const datos = datosDePrueba();
+  const partida = crearPartida(datos);
+  const golpes = [];
+  avanzarHasta(
+    partida,
+    datos,
+    () => QUIETO,
+    (p) => {
+      golpes.push(...p.golpes);
+      return golpes.length >= 2;
+    },
+    120,
+    crearAzar(4),
+  );
+  assert.ok(golpes.length >= 2);
+  const total = golpes.reduce((suma, golpe) => suma + golpe.contaminacion, 0);
+  assert.ok(Math.abs(total - partida.contaminacion.porcentaje) < 1e-9);
+  for (const { x, z } of golpes) {
+    const distancia = Math.hypot(x, z);
+    assert.ok(distancia > datos.config.pozo.radio && distancia < datos.config.pozo.radio + 2);
+  }
+  // En un paso sin golpes la lista queda vacía.
+  partida.enemigos = [];
+  avanzarPartida(partida, datos, QUIETO, DT, crearAzar(5));
+  assert.deepEqual(partida.golpes, []);
+});
