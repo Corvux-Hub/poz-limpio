@@ -33,7 +33,8 @@
     "potencia": 1
   },
   "limpieza": {
-    "regeneracion": 0.5
+    "regeneracion": 0.5,
+    "gracia": 0.25
   },
   "enemigos": {
     "radioBase": 0.35,

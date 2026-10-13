@@ -27,7 +27,7 @@ export function entradaEnCirculo(ax, az, bx, bz, cx, cz, r) {
 }
 
 // Mueve la gota `distancia` metros. Devuelve false si toca un objetivo o agota su alcance.
-function avanzar(gota, distancia, objetivos, ancho, alcance, tocados) {
+function avanzar(gota, distancia, objetivos, ancho, alcance, impactos) {
   const destinoX = gota.x + gota.dx * distancia;
   const destinoZ = gota.z + gota.dz * distancia;
 
@@ -41,7 +41,7 @@ function avanzar(gota, distancia, objetivos, ancho, alcance, tocados) {
     }
   }
   if (primero) {
-    tocados.add(primero.id);
+    impactos.set(primero.id, (impactos.get(primero.id) ?? 0) + 1);
     return false;
   }
 
@@ -51,20 +51,21 @@ function avanzar(gota, distancia, objetivos, ancho, alcance, tocados) {
   return gota.recorrido < alcance;
 }
 
-// Avanza el chorro un paso de dt segundos y devuelve el conjunto de ids de los objetivos tocados.
-// `origen` es la punta de la boquilla y `angulo` la dirección de disparo (de +x hacia +z).
+// Avanza el chorro un paso de dt segundos y devuelve cuántas gotas le pegaron a cada objetivo
+// en este paso (Map de id → gotas). Cada gota equivale a 1/cadencia segundos de chorro.
+// `origen` es de donde sale el agua y `angulo` la dirección de disparo (de +x hacia +z).
 // `objetivos` es una lista de { id, x, z, radio }.
 export function actualizarChorro(chorro, { disparando, origen, angulo }, objetivos, config, dt) {
   const { velocidad, alcance, cadencia, ancho } = config;
-  const tocados = new Set();
+  const impactos = new Map();
 
   chorro.gotas = chorro.gotas.filter((gota) =>
-    avanzar(gota, Math.min(velocidad * dt, alcance - gota.recorrido), objetivos, ancho, alcance, tocados),
+    avanzar(gota, Math.min(velocidad * dt, alcance - gota.recorrido), objetivos, ancho, alcance, impactos),
   );
 
   if (!disparando) {
     chorro.pendiente = 0;
-    return tocados;
+    return impactos;
   }
 
   const dx = Math.cos(angulo);
@@ -75,9 +76,9 @@ export function actualizarChorro(chorro, { disparando, origen, angulo }, objetiv
     // Las gotas que tocaba emitir dentro de este paso ya llevan un rato volando.
     const edad = chorro.pendiente / cadencia;
     const gota = { x: origen.x, z: origen.z, dx, dz, recorrido: 0 };
-    if (avanzar(gota, Math.min(velocidad * edad, alcance), objetivos, ancho, alcance, tocados)) {
+    if (avanzar(gota, Math.min(velocidad * edad, alcance), objetivos, ancho, alcance, impactos)) {
       chorro.gotas.push(gota);
     }
   }
-  return tocados;
+  return impactos;
 }

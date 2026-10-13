@@ -11,7 +11,7 @@ function simular(chorro, segundos, dt, parametros, objetivos = []) {
   const tocados = new Set();
   const pasos = Math.round(segundos / dt);
   for (let i = 0; i < pasos; i++) {
-    for (const id of actualizarChorro(chorro, parametros, objetivos, CONFIG, dt)) tocados.add(id);
+    for (const id of actualizarChorro(chorro, parametros, objetivos, CONFIG, dt).keys()) tocados.add(id);
   }
   return tocados;
 }
@@ -95,4 +95,14 @@ test('no atraviesa objetivos delgados aunque el paso sea grande', () => {
   const chorro = crearChorro();
   const tocados = simular(chorro, 1, 0.1, disparo(true), [{ id: 'delgado', x: 2.55, z: 0, radio: 0.05 }]);
   assert.deepEqual([...tocados], ['delgado']);
+});
+
+test('cuenta cuántas gotas le pegan a cada objetivo: tantas como la cadencia por segundo', () => {
+  const chorro = crearChorro();
+  const objetivo = { id: 'frente', x: 2, z: 0, radio: 0.4 };
+  // Primero que el chorro llegue, luego medir un segundo exacto.
+  simular(chorro, 0.5, 0.01, disparo(true), [objetivo]);
+  let gotas = 0;
+  for (let i = 0; i < 100; i++) gotas += actualizarChorro(chorro, disparo(true), [objetivo], CONFIG, 0.01).get('frente') ?? 0;
+  assert.equal(gotas, CONFIG.cadencia);
 });

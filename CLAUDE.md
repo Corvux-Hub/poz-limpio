@@ -63,8 +63,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_chorro
 ```
 
-- Cada enemigo acumula `exposicion` solo mientras el chorro lo toca.
-- Si deja de recibir agua, la exposición se **regenera lentamente** (valor configurable), para que no se pueda limpiar "a golpecitos".
+- Cada enemigo acumula `exposicion` según el agua que recibe: cada gota que le pega suma 1/`cadencia` segundos. Así un chorro continuo limpia al mismo ritmo a cualquier FPS (nunca contar "cuadros tocados").
+- Si deja de recibir agua más de `limpieza.gracia` segundos, la exposición se **regenera lentamente** (`limpieza.regeneracion`), para que no se pueda limpiar "a golpecitos".
 - Cuando `exposicion >= tiempo_de_limpieza`, el enemigo queda limpio, se detiene y se retira.
 - Referencia con el chorro básico (potencia 1):
 

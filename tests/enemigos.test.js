@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { aplicarAgua, progresoDeLimpieza, tiempoDeLimpieza } from '../src/systems/limpieza.js';
+import { aplicarAgua, estaRecibiendoAgua, progresoDeLimpieza, tiempoDeLimpieza } from '../src/systems/limpieza.js';
+import { actualizarChorro, crearChorro } from '../src/systems/chorro.js';
 import {
   ESTADOS,
   actualizarEnemigo,
@@ -17,18 +18,24 @@ const ENTORNO = {
   radioPozo: 1,
   potencia: 1,
   regeneracion: 0.5,
+  gracia: 0.25,
   pausaAlLimpiarse: 0.5,
   mapa: MAPA,
   margenSalida: 1,
 };
 const cerca = (a, b, tolerancia = 1e-6) => Math.abs(a - b) < tolerancia;
 
+// Con `recibeAgua`, le cae chorro continuo (dt segundos de agua por paso).
 // Devuelve la contaminación total que causó en ese tiempo.
 function simular(enemigo, segundos, dt, recibeAgua) {
   let contaminacion = 0;
-  for (let i = 0; i < Math.round(segundos / dt); i++) contaminacion += actualizarEnemigo(enemigo, recibeAgua, ENTORNO, dt);
+  for (let i = 0; i < Math.round(segundos / dt); i++) {
+    contaminacion += actualizarEnemigo(enemigo, recibeAgua ? dt : 0, ENTORNO, dt);
+  }
   return contaminacion;
 }
+
+const sucio = () => ({ tipo: PEATON, exposicion: 0, sinAgua: Infinity });
 
 // Un peatón ya parado frente al pozo.
 function enemigoEnPozo() {
@@ -47,30 +54,63 @@ test('tiempoDeLimpieza coincide con la tabla de referencia del diseño', () => {
 });
 
 test('queda limpio tras recibir agua el tiempo de limpieza', () => {
-  const enemigo = { tipo: PEATON, exposicion: 0 };
+  const enemigo = sucio();
   let limpio = false;
-  for (let i = 0; i < 299; i++) limpio = aplicarAgua(enemigo, true, ENTORNO, 0.01);
+  for (let i = 0; i < 299; i++) limpio = aplicarAgua(enemigo, 0.01, ENTORNO, 0.01);
   assert.equal(limpio, false);
-  assert.equal(aplicarAgua(enemigo, true, ENTORNO, 0.01), true);
+  assert.equal(aplicarAgua(enemigo, 0.01, ENTORNO, 0.01), true);
   assert.ok(cerca(progresoDeLimpieza(enemigo, 1), 1));
 });
 
-test('sin agua la exposición se regenera y no baja de cero', () => {
-  const enemigo = { tipo: PEATON, exposicion: 1 };
-  aplicarAgua(enemigo, false, ENTORNO, 1);
+test('sin agua, pasada la gracia, la exposición se regenera y no baja de cero', () => {
+  const enemigo = sucio();
+  aplicarAgua(enemigo, 1, ENTORNO, 0.01);
+  aplicarAgua(enemigo, 0, ENTORNO, 0.25);
+  assert.ok(cerca(enemigo.exposicion, 1));
+  assert.equal(estaRecibiendoAgua(enemigo, ENTORNO.gracia), true);
+  aplicarAgua(enemigo, 0, ENTORNO, 1);
   assert.ok(cerca(enemigo.exposicion, 0.5));
-  aplicarAgua(enemigo, false, ENTORNO, 5);
+  assert.equal(estaRecibiendoAgua(enemigo, ENTORNO.gracia), false);
+  aplicarAgua(enemigo, 0, ENTORNO, 5);
   assert.equal(enemigo.exposicion, 0);
 });
 
+test('la gracia se respeta aunque el paso la cruce a la mitad', () => {
+  const enemigo = sucio();
+  aplicarAgua(enemigo, 1, ENTORNO, 0.01);
+  aplicarAgua(enemigo, 0, ENTORNO, 0.2);
+  // De 0.2 a 0.45 s sin agua: solo 0.2 s pasan la gracia de 0.25 s.
+  aplicarAgua(enemigo, 0, ENTORNO, 0.25);
+  assert.ok(cerca(enemigo.exposicion, 1 - 0.5 * 0.2));
+});
+
 test('no se puede limpiar a golpecitos espaciados', () => {
-  const enemigo = { tipo: PEATON, exposicion: 0 };
+  const enemigo = sucio();
   let limpio = false;
   for (let ronda = 0; ronda < 20; ronda++) {
-    for (let i = 0; i < 50; i++) limpio ||= aplicarAgua(enemigo, true, ENTORNO, 0.01);
-    for (let i = 0; i < 150; i++) limpio ||= aplicarAgua(enemigo, false, ENTORNO, 0.01);
+    for (let i = 0; i < 50; i++) limpio ||= aplicarAgua(enemigo, 0.01, ENTORNO, 0.01);
+    for (let i = 0; i < 150; i++) limpio ||= aplicarAgua(enemigo, 0, ENTORNO, 0.01);
   }
   assert.equal(limpio, false);
+});
+
+test('el tiempo para limpiar con el chorro no depende de los FPS', () => {
+  const CHORRO = { velocidad: 14, alcance: 7, cadencia: 60, ancho: 0.12 };
+  const QUIETO = { ...PEATON, velocidad: 0 };
+  const tiempos = [30, 60, 144, 165].map((fps) => {
+    const dt = 1 / fps;
+    const chorro = crearChorro();
+    const enemigo = crearEnemigo(1, QUIETO, { x: 6, z: 0 }, 0.35);
+    let t = 0;
+    while (enemigo.estado !== ESTADOS.LIMPIO && t < 30) {
+      const impactos = actualizarChorro(chorro, { disparando: true, origen: { x: 2, z: 0 }, angulo: 0 }, [enemigo], CHORRO, dt);
+      actualizarEnemigo(enemigo, (impactos.get(1) ?? 0) / CHORRO.cadencia, ENTORNO, dt);
+      t += dt;
+    }
+    return t;
+  });
+  // Lo que tarda el agua en llegar (~0.25 s) más los 3 s de limpieza, a cualquier FPS.
+  for (const t of tiempos) assert.ok(Math.abs(t - tiempos[0]) < 0.05 && t < 3.4, `tiempos: ${tiempos}`);
 });
 
 test('camina hacia el pozo a su velocidad y se detiene a su alcance del brocal', () => {

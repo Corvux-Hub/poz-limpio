@@ -23,7 +23,7 @@ import {
   puntoEnZona,
   separarEnemigos,
 } from './systems/enemigos.js';
-import { progresoDeLimpieza } from './systems/limpieza.js';
+import { estaRecibiendoAgua, progresoDeLimpieza } from './systems/limpieza.js';
 import { contaminar, crearContaminacion, estaPerdido } from './systems/contaminacion.js';
 import { FASES, actualizarOleadas, continuarOleadas, crearOleadas, porAparecer } from './systems/oleadas.js';
 import { aplicarMejoras, comprar, crearMejoras, estadoDeMejora } from './systems/mejoras.js';
@@ -157,8 +157,7 @@ function actualizarOleada(dt) {
   }
 }
 
-// Avanza la partida dt segundos. Devuelve los ids de los enemigos que recibieron agua
-// y los enemigos que quedaron limpios en este paso.
+// Avanza la partida dt segundos. Devuelve los enemigos que quedaron limpios en este paso.
 function actualizarPartida(dt) {
   const { ajustes } = partida;
   actualizarOleada(dt);
@@ -168,12 +167,13 @@ function actualizarPartida(dt) {
     origen: puntoEnDireccion(CENTRO_POZO, apuntado.angulo, jugador.distanciaCuerpo),
     angulo: apuntado.angulo,
   };
-  const tocados = actualizarChorro(partida.chorro, disparo, partida.enemigos.filter(esObjetivo), ajustes.chorro, dt);
+  const impactos = actualizarChorro(partida.chorro, disparo, partida.enemigos.filter(esObjetivo), ajustes.chorro, dt);
 
   const entorno = {
     radioPozo: config.pozo.radio,
     potencia: ajustes.chorro.potencia,
     regeneracion: config.limpieza.regeneracion,
+    gracia: config.limpieza.gracia,
     pausaAlLimpiarse: config.enemigos.pausaAlLimpiarse,
     mapa: config.mapa,
     margenSalida: config.enemigos.margenSalida,
@@ -181,7 +181,9 @@ function actualizarPartida(dt) {
   const limpiados = [];
   for (const enemigo of partida.enemigos) {
     const estabaSucio = esObjetivo(enemigo);
-    const golpes = actualizarEnemigo(enemigo, tocados.has(enemigo.id), entorno, dt);
+    // Cada gota que le pegó equivale a 1/cadencia segundos de chorro.
+    const segundosDeAgua = (impactos.get(enemigo.id) ?? 0) / ajustes.chorro.cadencia;
+    const golpes = actualizarEnemigo(enemigo, segundosDeAgua, entorno, dt);
     contaminar(partida.contaminacion, golpes * ajustes.pozo.factorContaminacion);
     if (estabaSucio && enemigo.estado === ESTADOS.LIMPIO) {
       partida.limpiados++;
@@ -198,7 +200,7 @@ function actualizarPartida(dt) {
   } else if (partida.oleadas.fase === FASES.ESPERANDO) {
     abrirMejoras();
   }
-  return { tocados, limpiados };
+  return limpiados;
 }
 
 function sincronizarHud() {
@@ -213,7 +215,7 @@ function sincronizarHud() {
   });
 }
 
-function sincronizarEnemigos(tocados, dt) {
+function sincronizarEnemigos(dt) {
   const { enemigos } = partida;
   for (const enemigo of enemigos) {
     let visual = visualesEnemigos.get(enemigo.id);
@@ -223,7 +225,7 @@ function sincronizarEnemigos(tocados, dt) {
       escena.add(visual.grupo);
     }
     const progreso = progresoDeLimpieza(enemigo, partida.ajustes.chorro.potencia);
-    visual.sincronizar(enemigo, tocados.has(enemigo.id), progreso, dt);
+    visual.sincronizar(enemigo, estaRecibiendoAgua(enemigo, config.limpieza.gracia), progreso, dt);
   }
   for (const [id, visual] of visualesEnemigos) {
     if (enemigos.some((enemigo) => enemigo.id === id)) continue;
@@ -233,7 +235,7 @@ function sincronizarEnemigos(tocados, dt) {
   }
 }
 
-const SIN_CAMBIOS = { tocados: new Set(), limpiados: [] };
+const NINGUNO = [];
 let tiempoAnterior = performance.now();
 reiniciar();
 
@@ -244,14 +246,14 @@ function cuadro(tiempo) {
 
   // Lógica: fuera de 'jugando' (pausa, mejoras, derrota) todo queda congelado detrás de la pantalla.
   const jugando = partida.estado === 'jugando';
-  const { tocados, limpiados } = jugando ? actualizarPartida(dt) : SIN_CAMBIOS;
+  const limpiados = jugando ? actualizarPartida(dt) : NINGUNO;
   const dtVisual = jugando ? dt : 0;
 
   // Render.
   jugador.sincronizar(apuntado);
   pozo.sincronizar(partida.contaminacion.porcentaje);
   chorroVisual.sincronizar(partida.chorro);
-  sincronizarEnemigos(tocados, dtVisual);
+  sincronizarEnemigos(dtVisual);
   for (const enemigo of limpiados) {
     etiquetas.agregar(`+${enemigo.tipo.recompensa}`, { x: enemigo.x, y: ALTURA_RECOMPENSA, z: enemigo.z });
   }

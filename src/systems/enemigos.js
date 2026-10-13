@@ -17,6 +17,8 @@ export function crearEnemigo(id, tipo, { x, z }, radioBase) {
     z,
     radio: radioBase * tipo.tamano,
     exposicion: 0,
+    // Segundos desde la última gota que le pegó.
+    sinAgua: Infinity,
     estado: ESTADOS.AVANZANDO,
     espera: 0,
     // Segundos desde su último golpe al pozo (para animarlo); Infinity si aún no golpea.
@@ -124,10 +126,11 @@ function alejarseDelPozo(enemigo, { mapa, margenSalida }, dt) {
   }
 }
 
-// Avanza un enemigo dt segundos y devuelve la contaminación (%) que le causó al pozo en este paso.
-// `entorno` trae radioPozo, potencia, regeneracion, pausaAlLimpiarse, mapa y margenSalida.
-export function actualizarEnemigo(enemigo, recibeAgua, entorno, dt) {
-  if (esObjetivo(enemigo) && aplicarAgua(enemigo, recibeAgua, entorno, dt)) {
+// Avanza un enemigo dt segundos con los `segundosDeAgua` de chorro que recibió en este paso.
+// Devuelve la contaminación (%) que le causó al pozo.
+// `entorno` trae radioPozo, potencia, regeneracion, gracia, pausaAlLimpiarse, mapa y margenSalida.
+export function actualizarEnemigo(enemigo, segundosDeAgua, entorno, dt) {
+  if (esObjetivo(enemigo) && aplicarAgua(enemigo, segundosDeAgua, entorno, dt)) {
     // Queda limpio: se detiene un momento y después se retira.
     enemigo.estado = ESTADOS.LIMPIO;
     enemigo.espera = entorno.pausaAlLimpiarse;
