@@ -32,6 +32,12 @@
     "ancho": 0.12,
     "potencia": 1
   },
+  "presion": {
+    "reserva": 10,
+    "recarga": 4,
+    "retrasoRecarga": 0.25,
+    "caudalSinPresion": 0.4
+  },
   "limpieza": {
     "regeneracion": 0.5,
     "gracia": 0.25
@@ -39,7 +45,8 @@
   "enemigos": {
     "radioBase": 0.35,
     "pausaAlLimpiarse": 0.8,
-    "margenSalida": 1.5
+    "margenAparicion": 1.5,
+    "margenSalida": 2.5
   },
   "oleadas": {
     "esperaInicial": 3,

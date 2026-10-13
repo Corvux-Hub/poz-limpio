@@ -16,6 +16,7 @@ import {
 import { contaminar, crearContaminacion, estaPerdido } from '../systems/contaminacion.js';
 import { FASES, actualizarOleadas, continuarOleadas, crearOleadas } from '../systems/oleadas.js';
 import { aplicarMejoras, comprar, crearMejoras } from '../systems/mejoras.js';
+import { actualizarPresion, crearPresion } from '../systems/presion.js';
 
 // El pozo está siempre en el centro del mapa.
 export const CENTRO_POZO = { x: 0, z: 0 };
@@ -27,7 +28,7 @@ export function distanciaSalidaAgua(config) {
 
 // Parámetros vigentes: los de config.json con las mejoras compradas aplicadas.
 function ajustesVigentes({ config, mejoras: catalogo }, mejoras) {
-  return aplicarMejoras({ chorro: config.chorro, pozo: config.pozo }, mejoras, catalogo);
+  return aplicarMejoras({ chorro: config.chorro, pozo: config.pozo, presion: config.presion }, mejoras, catalogo);
 }
 
 export function crearPartida(datos) {
@@ -35,6 +36,7 @@ export function crearPartida(datos) {
   return {
     apuntado: crearApuntado(),
     chorro: crearChorro(),
+    presion: crearPresion(datos.config.presion.reserva),
     enemigos: [],
     contaminacion: crearContaminacion(),
     oleadas: crearOleadas(datos.config.oleadas.esperaInicial),
@@ -54,13 +56,16 @@ function armaDe(pedido, tipo, armas) {
   return armas[id];
 }
 
-// Hace aparecer en el borde los enemigos que pide la oleada.
+// Hace aparecer los enemigos que pide la oleada, un poco por fuera del borde del mapa
+// (`enemigos.margenAparicion`): salen de la oscuridad en vez de surgir a la vista.
 function actualizarOleada(partida, { config, tipos, armas, oleadas }, aleatorio, dt) {
   const entorno = { quedanSucios: partida.enemigos.some(esObjetivo), celebracion: config.oleadas.celebracion };
+  const margen = config.enemigos.margenAparicion;
+  const zonaDeAparicion = { ancho: config.mapa.ancho + margen * 2, alto: config.mapa.alto + margen * 2 };
   for (const pedido of actualizarOleadas(partida.oleadas, oleadas, entorno, aleatorio, dt)) {
     const tipo = tipos[pedido.tipo];
     if (!tipo) throw new Error(`Tipo de enemigo desconocido en waves.json: "${pedido.tipo}"`);
-    const punto = puntoEnZona(config.mapa, pedido.zona, aleatorio);
+    const punto = puntoEnZona(zonaDeAparicion, pedido.zona, aleatorio);
     const arma = armaDe(pedido, tipo, armas);
     partida.enemigos.push(crearEnemigo(partida.siguienteId++, tipo, punto, config.enemigos.radioBase, arma));
   }
@@ -78,6 +83,7 @@ export function avanzarPartida(partida, datos, { objetivo, disparando }, dt, ale
     disparando,
     origen: puntoEnDireccion(CENTRO_POZO, partida.apuntado.angulo, distanciaSalidaAgua(config)),
     angulo: partida.apuntado.angulo,
+    caudal: actualizarPresion(partida.presion, disparando, ajustes.presion, dt),
   };
   const impactos = actualizarChorro(partida.chorro, disparo, partida.enemigos.filter(esObjetivo), ajustes.chorro, dt);
 

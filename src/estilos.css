@@ -80,6 +80,31 @@ body {
   }
 }
 
+.hud-presion {
+  margin-top: 10px;
+}
+
+.hud-presion .hud-etiqueta {
+  font-size: 13px;
+}
+
+.hud-presion-aviso {
+  font-weight: 600;
+}
+
+.hud-relleno-presion {
+  background: #8fd8ff;
+  transition: none;
+}
+
+.hud-presion.sin-presion .hud-relleno-presion {
+  background: #e08a3a;
+}
+
+.hud-presion.sin-presion .hud-presion-aviso {
+  color: #f0a35a;
+}
+
 .hud-agua {
   margin-top: 8px;
   font-size: 14px;

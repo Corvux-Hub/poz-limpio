@@ -26,6 +26,7 @@ import { esObjetivo } from './systems/enemigos.js';
 import { estaRecibiendoAgua, progresoDeLimpieza } from './systems/limpieza.js';
 import { porAparecer } from './systems/oleadas.js';
 import { estadoDeMejora } from './systems/mejoras.js';
+import { estaSinPresion } from './systems/presion.js';
 
 const datos = { config, tipos: tiposDeEnemigo, armas, oleadas: datosOleadas, mejoras: catalogoMejoras };
 // Altura (m) desde la que sube el "+N" de agua limpia al limpiar a alguien.
@@ -143,6 +144,7 @@ function jugar(dt) {
 function sincronizarHud() {
   const { oleadas, enemigos, contaminacion } = partida;
   hud.actualizarContaminacion(contaminacion.porcentaje);
+  hud.actualizarPresion(partida.presion.nivel / partida.ajustes.presion.reserva, estaSinPresion(partida.presion));
   hud.actualizarAgua(partida.agua);
   hud.actualizarOleada({
     numero: oleadas.numero,

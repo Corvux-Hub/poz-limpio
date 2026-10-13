@@ -1,5 +1,5 @@
-// HUD en HTML sobre el canvas: contaminación del pozo, agua limpia, oleada, avisos
-// y pantallas de pausa y derrota.
+// HUD en HTML sobre el canvas: contaminación del pozo, presión de la manguera, agua limpia,
+// oleada, avisos y pantallas de pausa y derrota.
 import { FASES } from '../systems/oleadas.js';
 
 // Color de la barra: azul con el pozo limpio, café cuando está contaminado.
@@ -44,7 +44,11 @@ export function crearHud(contenedor) {
   raiz.innerHTML = `
     <div class="hud-contaminacion">
       <div class="hud-etiqueta"><span>Contaminación del pozo</span><span class="hud-valor">0 %</span></div>
-      <div class="hud-barra"><div class="hud-relleno"></div></div>
+      <div class="hud-barra hud-barra-contaminacion"><div class="hud-relleno"></div></div>
+      <div class="hud-presion">
+        <div class="hud-etiqueta"><span>Presión</span><span class="hud-presion-aviso"></span></div>
+        <div class="hud-barra"><div class="hud-relleno hud-relleno-presion"></div></div>
+      </div>
       <div class="hud-agua">Agua limpia: <span class="hud-agua-valor">0</span></div>
     </div>
     <div class="hud-oleada">
@@ -73,8 +77,11 @@ export function crearHud(contenedor) {
   contenedor.appendChild(raiz);
 
   const valor = raiz.querySelector('.hud-valor');
-  const barra = raiz.querySelector('.hud-barra');
-  const relleno = raiz.querySelector('.hud-relleno');
+  const barra = raiz.querySelector('.hud-barra-contaminacion');
+  const relleno = barra.querySelector('.hud-relleno');
+  const presion = raiz.querySelector('.hud-presion');
+  const rellenoPresion = raiz.querySelector('.hud-relleno-presion');
+  const avisoPresion = raiz.querySelector('.hud-presion-aviso');
   const agua = raiz.querySelector('.hud-agua-valor');
   const numeroOleada = raiz.querySelector('.hud-oleada-numero');
   const quedan = raiz.querySelector('.hud-oleada-quedan');
@@ -86,6 +93,7 @@ export function crearHud(contenedor) {
   const resumen = raiz.querySelector('.derrota-resumen');
 
   let contaminacionMostrada = null;
+  let presionMostrada = null;
 
   return {
     actualizarContaminacion(porcentaje) {
@@ -100,6 +108,17 @@ export function crearHud(contenedor) {
       valor.textContent = `${Math.floor(porcentaje)} %`;
       relleno.style.width = `${porcentaje}%`;
       relleno.style.backgroundColor = mezclar(COLOR_LIMPIO, COLOR_SUCIO, porcentaje / 100);
+    },
+
+    // `fraccion` de 0 a 1 de la reserva; sin presión la barra se pone naranja y sugiere soltar.
+    actualizarPresion(fraccion, sinPresion) {
+      const porcentaje = Math.round(fraccion * 100);
+      if (porcentaje !== presionMostrada) {
+        presionMostrada = porcentaje;
+        rellenoPresion.style.width = `${porcentaje}%`;
+      }
+      presion.classList.toggle('sin-presion', sinPresion);
+      escribir(avisoPresion, sinPresion ? 'Suelta para recargar' : '');
     },
 
     actualizarAgua(cantidad) {

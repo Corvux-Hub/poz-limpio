@@ -3,8 +3,11 @@
 // - Si no, elige al más urgente: el que ya golpea el pozo o el que llegará antes.
 // - Cada vez que cambia de objetivo tarda `reaccion` segundos en volver a disparar (apuntar y reflejos).
 // - Solo dispara si el objetivo está al alcance del agua.
+// - Con `recargarAl` (0 a 1), cuando se queda sin presión suelta el clic hasta recuperar esa fracción
+//   de la reserva, como quien nota el chorro débil. Sin él, nunca suelta (como un novato).
 import { ESTADOS, esObjetivo } from '../src/systems/enemigos.js';
 import { distanciaSalidaAgua } from '../src/core/partida.js';
+import { estaSinPresion } from '../src/systems/presion.js';
 
 // Segundos que le faltan para empezar a golpear el pozo (0 si ya lo golpea).
 function segundosParaLlegar(enemigo, radioPozo) {
@@ -13,9 +16,10 @@ function segundosParaLlegar(enemigo, radioPozo) {
   return (Math.hypot(enemigo.x, enemigo.z) - parada) / enemigo.tipo.velocidad;
 }
 
-export function crearJugadorAutomatico({ reaccion }) {
+export function crearJugadorAutomatico({ reaccion, recargarAl = null }) {
   let objetivoId = null;
   let espera = 0;
+  let recargando = false;
 
   return function decidir(partida, { config }, dt) {
     const alcanceAgua = distanciaSalidaAgua(config) + partida.ajustes.chorro.alcance;
@@ -40,8 +44,14 @@ export function crearJugadorAutomatico({ reaccion }) {
       espera = reaccion;
     }
     espera -= dt;
+
+    if (recargarAl !== null) {
+      if (estaSinPresion(partida.presion)) recargando = true;
+      else if (partida.presion.nivel >= recargarAl * partida.ajustes.presion.reserva) recargando = false;
+    }
+
     if (!elegido) return { objetivo: null, disparando: false };
-    return { objetivo: { x: elegido.x, z: elegido.z }, disparando: espera <= 0 && aAlcance(elegido) };
+    return { objetivo: { x: elegido.x, z: elegido.z }, disparando: espera <= 0 && aAlcance(elegido) && !recargando };
   };
 }
 

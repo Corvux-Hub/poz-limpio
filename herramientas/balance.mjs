@@ -2,11 +2,13 @@
 // del juego (sin gráficos) y resume cómo termina cada oleada.
 //
 //   npm run balance
-//   npm run balance -- --partidas 40 --oleadas 12 --reaccion 0.8
+//   npm run balance -- --partidas 40 --oleadas 12 --reaccion 0.8 --recargar-al 0.5
 //
 // Escenarios:
 // - "sin mejoras": nunca compra nada; mide si las primeras oleadas se pueden ganar a pura puntería.
 // - "con mejoras": entre oleadas purifica si hace falta y compra en orden de prioridad.
+// Con --recargar-al el jugador suelta el clic al quedarse sin presión hasta recuperar esa fracción;
+// con --recargar-al no, nunca suelta (como un novato).
 import { parseArgs } from 'node:util';
 import { cargarDatos } from './datos.js';
 import { crearAzar } from './azar.js';
@@ -26,12 +28,14 @@ const { values: opciones } = parseArgs({
     oleadas: { type: 'string', default: '10' },
     reaccion: { type: 'string', default: '0.6' },
     fps: { type: 'string', default: '60' },
+    'recargar-al': { type: 'string', default: '0.5' },
   },
 });
 const PARTIDAS = Number(opciones.partidas);
 const OLEADAS = Number(opciones.oleadas);
 const REACCION = Number(opciones.reaccion);
 const DT = 1 / Number(opciones.fps);
+const RECARGAR_AL = opciones['recargar-al'] === 'no' ? null : Number(opciones['recargar-al']);
 // Tope de tiempo por partida, por si una oleada nunca terminara.
 const SEGUNDOS_MAXIMOS = 60 * 30;
 
@@ -41,7 +45,7 @@ const UMBRAL_PURIFICAR = 30;
 // Juega una partida y devuelve, por cada oleada alcanzada, la contaminación al terminarla (o null si ahí perdió).
 function jugarPartida(datos, semilla, conMejoras) {
   const azar = crearAzar(semilla);
-  const decidir = crearJugadorAutomatico({ reaccion: REACCION });
+  const decidir = crearJugadorAutomatico({ reaccion: REACCION, recargarAl: RECARGAR_AL });
   const partida = crearPartida(datos);
   const resultados = [];
   for (let t = 0; t < SEGUNDOS_MAXIMOS; t += DT) {
@@ -81,7 +85,8 @@ function resumir(datos, conMejoras) {
 }
 
 const datos = cargarDatos();
-console.log(`${PARTIDAS} partidas por escenario, reacción ${REACCION} s, ${opciones.fps} FPS.`);
+const estilo = RECARGAR_AL === null ? 'nunca suelta el clic' : `recarga hasta ${RECARGAR_AL * 100} % al quedarse sin presión`;
+console.log(`${PARTIDAS} partidas por escenario, reacción ${REACCION} s, ${opciones.fps} FPS, ${estilo}.`);
 for (const [nombre, conMejoras] of [
   ['Sin mejoras', false],
   ['Con mejoras', true],

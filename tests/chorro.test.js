@@ -106,3 +106,10 @@ test('cuenta cuántas gotas le pegan a cada objetivo: tantas como la cadencia po
   for (let i = 0; i < 100; i++) gotas += actualizarChorro(chorro, disparo(true), [objetivo], CONFIG, 0.01).get('frente') ?? 0;
   assert.equal(gotas, CONFIG.cadencia);
 });
+
+test('con menos caudal salen proporcionalmente menos gotas', () => {
+  const chorro = crearChorro();
+  // En 0.4 s ninguna gota llega a su alcance (5 m a 10 m/s), así que todas siguen en el aire.
+  for (let i = 0; i < 40; i++) actualizarChorro(chorro, { ...disparo(true), caudal: 0.5 }, [], CONFIG, 0.01);
+  assert.equal(chorro.gotas.length, 0.5 * CONFIG.cadencia * 0.4);
+});

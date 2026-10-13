@@ -4,9 +4,18 @@
     "descripcion": "El chorro limpia más rápido.",
     "parametro": "chorro.potencia",
     "niveles": [
-      { "valor": 1.25, "costo": 30 },
-      { "valor": 1.5, "costo": 60 },
-      { "valor": 2, "costo": 110 }
+      {
+        "valor": 1.25,
+        "costo": 30
+      },
+      {
+        "valor": 1.5,
+        "costo": 60
+      },
+      {
+        "valor": 2,
+        "costo": 110
+      }
     ]
   },
   "alcance": {
@@ -14,9 +23,18 @@
     "descripcion": "El agua llega más lejos.",
     "parametro": "chorro.alcance",
     "niveles": [
-      { "valor": 8.5, "costo": 25 },
-      { "valor": 10, "costo": 50 },
-      { "valor": 11.5, "costo": 90 }
+      {
+        "valor": 8.5,
+        "costo": 25
+      },
+      {
+        "valor": 10,
+        "costo": 50
+      },
+      {
+        "valor": 11.5,
+        "costo": 90
+      }
     ]
   },
   "ancho": {
@@ -24,9 +42,56 @@
     "descripcion": "Un chorro más grueso es más fácil de atinar.",
     "parametro": "chorro.ancho",
     "niveles": [
-      { "valor": 0.18, "costo": 20 },
-      { "valor": 0.25, "costo": 45 },
-      { "valor": 0.33, "costo": 80 }
+      {
+        "valor": 0.18,
+        "costo": 20
+      },
+      {
+        "valor": 0.25,
+        "costo": 45
+      },
+      {
+        "valor": 0.33,
+        "costo": 80
+      }
+    ]
+  },
+  "reserva": {
+    "nombre": "Reserva de presión",
+    "descripcion": "Más segundos de chorro a plena presión antes de quedarte sin fuerza.",
+    "parametro": "presion.reserva",
+    "niveles": [
+      {
+        "valor": 8,
+        "costo": 30
+      },
+      {
+        "valor": 10.5,
+        "costo": 60
+      },
+      {
+        "valor": 13.5,
+        "costo": 100
+      }
+    ]
+  },
+  "recarga": {
+    "nombre": "Recarga de presión",
+    "descripcion": "Al soltar el clic, la presión vuelve más rápido.",
+    "parametro": "presion.recarga",
+    "niveles": [
+      {
+        "valor": 2.75,
+        "costo": 25
+      },
+      {
+        "valor": 3.5,
+        "costo": 50
+      },
+      {
+        "valor": 4.5,
+        "costo": 85
+      }
     ]
   },
   "ampliacion": {
@@ -34,9 +99,18 @@
     "descripcion": "Con más agua, cada golpe lo ensucia menos.",
     "parametro": "pozo.factorContaminacion",
     "niveles": [
-      { "valor": 0.8, "costo": 40 },
-      { "valor": 0.65, "costo": 80 },
-      { "valor": 0.5, "costo": 130 }
+      {
+        "valor": 0.8,
+        "costo": 40
+      },
+      {
+        "valor": 0.65,
+        "costo": 80
+      },
+      {
+        "valor": 0.5,
+        "costo": 130
+      }
     ]
   },
   "purificacion": {

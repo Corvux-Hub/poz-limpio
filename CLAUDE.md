@@ -36,7 +36,8 @@ Survival horror 3D con cámara fija en vista 3/4 (alta e inclinada). Defiendes u
 
 ## Enemigos
 
-- Aparecen en el borde del mapa y caminan en línea recta hacia el pozo.
+- Aparecen un poco por fuera del borde del mapa (`enemigos.margenAparicion`), saliendo de la oscuridad, y caminan en línea recta hacia el pozo. Al retirarse se van hasta `enemigos.margenSalida` antes de desaparecer.
+- Regla de balance: **cuanto más grandes y sucios, más lentos**. Atendido a tiempo, ninguno debería alcanzar el pozo antes de que dé tiempo de limpiarlo.
 - Se detienen cuando el brocal queda a su `alcance` de ataque (en `enemies.json`), que los deja por fuera del avatar.
 - Su color va de `colorBase` a `colorLimpio` según su progreso de limpieza; mientras reciben agua brillan en azul.
 - En cuanto empiezan a recibir agua muestran una barra de limpieza sobre la cabeza.
@@ -76,12 +77,14 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
 - Cuando `exposicion >= tiempo_de_limpieza`, el enemigo queda limpio, se detiene y se retira.
 - Referencia con el chorro básico (potencia 1), revisada en el hito 7 para que los pesados no tarden tanto:
 
-| Enemigo | Suciedad | Tamaño | Tiempo | Arma | Recompensa |
-|---|---|---|---|---|---|
-| Peatón ligero | 3 | ×1.0 | 3 s | — | 10 |
-| Oficinista sucio | 5 | ×1.0 | 5 s | — | 18 |
-| Obrero corpulento con palo | 6 | ×1.5 | 9 s | palo | 30 |
-| Jefe de basurero | 8 | ×1.5 | 12 s | tubo | 60 |
+| Enemigo | Suciedad | Tamaño | Tiempo | Velocidad | Golpe | Arma | Recompensa |
+|---|---|---|---|---|---|---|---|
+| Peatón ligero | 3 | ×1.0 | 3 s | 1.0 m/s | 4 % cada 2 s | — | 10 |
+| Oficinista sucio | 5 | ×1.0 | 5 s | 0.75 m/s | 5 % cada 2 s | — | 18 |
+| Obrero corpulento con palo | 6 | ×1.5 | 9 s | 0.5 m/s | 6 % cada 2.5 s | palo | 30 |
+| Jefe de basurero | 8 | ×1.5 | 12 s | 0.35 m/s | 8 % cada 2.5 s | tubo | 60 |
+
+Las armas multiplican el golpe (palo ×1.3, escoba ×1.2, tubo ×1.6).
 
 ## Avatar
 
@@ -95,14 +98,21 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
 - Los enemigos que llegan lo golpean cada `intervaloGolpe` segundos y cada golpe suma su `contaminacion` (%). No baja sola.
 - El agua del pozo pasa de azul a café según el porcentaje, y el HUD lo muestra en una barra.
 - La lógica vive en `src/systems/contaminacion.js`.
-- La manguera tiene **presión** (reserva de agua). Se agota al disparar y se recarga con pausas.
 - Mejoras entre oleadas (todas definidas en `data/upgrades.json`):
   - potencia del chorro
   - alcance
   - ancho del chorro
-  - reserva y recarga de presión (hito 8)
+  - reserva y recarga de presión
   - purificación (baja la contaminación) y ampliación del pozo (cada golpe ensucia menos)
   - segunda manguera (mejora tardía)
+
+## Presión de la manguera
+
+- La reserva se mide en segundos de chorro a plena presión (`presion.reserva`). Disparar gasta 1 s por segundo, también si el agua no le pega a nadie.
+- Al soltar el clic, tras `presion.retrasoRecarga` segundos, se recarga a `presion.recarga` segundos por segundo.
+- Sin presión el agua sigue saliendo, pero al `presion.caudalSinPresion` del caudal (menos gotas), así que limpia más lento: conviene soltar un momento.
+- El HUD muestra la barra de presión; al vaciarse se pone naranja y dice "Suelta para recargar".
+- La lógica vive en `src/systems/presion.js`; el caudal que devuelve regula cuántas gotas emite el chorro.
 
 ## Agua limpia y menú de mejoras
 
@@ -112,6 +122,12 @@ tiempo_de_limpieza = suciedad_base × multiplicador_de_tamaño ÷ potencia_del_c
   - Por niveles: `parametro` (`seccion.campo` de `config.json`, p. ej. `chorro.potencia`) y `niveles`, una lista de `{ valor, costo }`. El nivel 0 es el valor de `config.json`.
   - Consumibles: `costo`, `incrementoCosto` (cuánto sube con cada compra) y su efecto; por ahora solo `purifica` (puntos de contaminación que quita). `accion` cambia el texto del botón.
 - La lógica vive en `src/systems/mejoras.js`; `aplicarMejoras` da los parámetros vigentes de la partida.
+
+## Balance
+
+- `npm run balance` juega muchas partidas con un jugador automático (`herramientas/`) usando la misma lógica que el juego (`src/core/partida.js`) y resume, por oleada, cuántas partidas la superan y con cuánta contaminación, sin mejoras y comprando mejoras.
+- El jugador automático imita a un humano decente: se concentra en un objetivo, tarda en reaccionar al cambiarlo (`--reaccion`) y puede soltar el clic al quedarse sin presión (`--recargar-al 0.5`) o nunca soltarlo (`--recargar-al no`). Apunta perfecto, así que una persona rinde algo peor.
+- Antes y después de cambiar números de balance, correrlo y comparar. Meta actual: sin mejoras se ganan las oleadas 1 a 3 (la 3 deja el pozo a media contaminación); de la 4 en adelante hacen falta mejoras; con mejoras se llega a la 7 u 8 y el escalado termina por ganar.
 
 ## Datos primero
 
@@ -127,13 +143,15 @@ Nada de números mágicos en el código. Todo el balance vive en JSON dentro de 
 
 ```
 src/
-  main.js          # arranque y game loop
-  core/            # escena, cámara, input, estados del juego
+  main.js          # arranque, game loop y pantallas (traduce el ratón y dibuja)
+  core/            # escena, cámara, input y partida.js (lógica pura de una partida)
   entities/        # pozo, manguera, enemigos, proyectil de agua
   systems/         # oleadas, limpieza, colisiones, mejoras
   ui/              # HUD: contaminación, presión, oleada, menú de mejoras
   data/            # JSON de balance
 public/models/     # GLB finales (vacío al inicio)
+herramientas/      # simulador de balance y jugador automático (no entran al build)
+tests/             # pruebas de la lógica (node --test)
 ```
 
 ## Reglas de trabajo para Claude

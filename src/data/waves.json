@@ -1,46 +1,155 @@
 {
   "oleadas": [
     {
-      "grupos": [{ "tipo": "peaton", "cantidad": 4, "intervalo": 3, "aparicion": "cualquiera" }]
-    },
-    {
       "grupos": [
-        { "tipo": "peaton", "cantidad": 5, "intervalo": 2.5, "aparicion": ["izquierda", "derecha"] },
-        { "tipo": "oficinista", "cantidad": 1, "intervalo": 1, "retraso": 6, "aparicion": "arriba" }
+        {
+          "tipo": "peaton",
+          "cantidad": 4,
+          "intervalo": 4.5,
+          "aparicion": "cualquiera"
+        }
       ]
     },
     {
       "grupos": [
-        { "tipo": "peaton", "cantidad": 4, "intervalo": 2.5, "aparicion": "arriba" },
-        { "tipo": "oficinista", "cantidad": 3, "intervalo": 3.5, "retraso": 1.5, "aparicion": "abajo" }
+        {
+          "tipo": "peaton",
+          "cantidad": 5,
+          "intervalo": 4.5,
+          "aparicion": [
+            "izquierda",
+            "derecha"
+          ]
+        },
+        {
+          "tipo": "oficinista",
+          "cantidad": 1,
+          "intervalo": 1,
+          "retraso": 10,
+          "aparicion": "arriba"
+        }
       ]
     },
     {
       "grupos": [
-        { "tipo": "peaton", "cantidad": 6, "intervalo": 2, "aparicion": "cualquiera" },
-        { "tipo": "peaton", "cantidad": 2, "intervalo": 4, "retraso": 3, "aparicion": ["izquierda", "derecha"], "arma": "escoba" },
-        { "tipo": "obrero", "cantidad": 1, "intervalo": 1, "retraso": 8, "aparicion": "cualquiera" }
+        {
+          "tipo": "peaton",
+          "cantidad": 4,
+          "intervalo": 5,
+          "aparicion": "cualquiera"
+        },
+        {
+          "tipo": "oficinista",
+          "cantidad": 2,
+          "intervalo": 10,
+          "retraso": 6,
+          "aparicion": [
+            "arriba",
+            "abajo"
+          ]
+        }
       ]
     },
     {
       "grupos": [
-        { "tipo": "oficinista", "cantidad": 4, "intervalo": 3, "aparicion": ["izquierda", "derecha"] },
-        { "tipo": "peaton", "cantidad": 4, "intervalo": 2.5, "retraso": 1, "aparicion": "cualquiera", "arma": "escoba" },
-        { "tipo": "obrero", "cantidad": 2, "intervalo": 6, "retraso": 4, "aparicion": ["arriba", "abajo"] }
+        {
+          "tipo": "peaton",
+          "cantidad": 5,
+          "intervalo": 4,
+          "aparicion": "cualquiera"
+        },
+        {
+          "tipo": "peaton",
+          "cantidad": 2,
+          "intervalo": 8,
+          "retraso": 6,
+          "aparicion": [
+            "izquierda",
+            "derecha"
+          ],
+          "arma": "escoba"
+        },
+        {
+          "tipo": "obrero",
+          "cantidad": 1,
+          "intervalo": 1,
+          "retraso": 14,
+          "aparicion": "cualquiera"
+        }
       ]
     },
     {
       "grupos": [
-        { "tipo": "peaton", "cantidad": 6, "intervalo": 2, "aparicion": "cualquiera" },
-        { "tipo": "oficinista", "cantidad": 3, "intervalo": 4, "retraso": 2, "aparicion": ["arriba", "abajo"] },
-        { "tipo": "obrero", "cantidad": 2, "intervalo": 7, "retraso": 5, "aparicion": ["izquierda", "derecha"] },
-        { "tipo": "jefe", "cantidad": 1, "intervalo": 1, "retraso": 12, "aparicion": "cualquiera" }
+        {
+          "tipo": "oficinista",
+          "cantidad": 2,
+          "intervalo": 8,
+          "aparicion": [
+            "izquierda",
+            "derecha"
+          ]
+        },
+        {
+          "tipo": "peaton",
+          "cantidad": 3,
+          "intervalo": 5,
+          "retraso": 3,
+          "aparicion": "cualquiera",
+          "arma": "escoba"
+        },
+        {
+          "tipo": "obrero",
+          "cantidad": 2,
+          "intervalo": 12,
+          "retraso": 8,
+          "aparicion": [
+            "arriba",
+            "abajo"
+          ]
+        }
+      ]
+    },
+    {
+      "grupos": [
+        {
+          "tipo": "peaton",
+          "cantidad": 5,
+          "intervalo": 4,
+          "aparicion": "cualquiera"
+        },
+        {
+          "tipo": "oficinista",
+          "cantidad": 2,
+          "intervalo": 9,
+          "retraso": 5,
+          "aparicion": [
+            "arriba",
+            "abajo"
+          ]
+        },
+        {
+          "tipo": "obrero",
+          "cantidad": 1,
+          "intervalo": 1,
+          "retraso": 12,
+          "aparicion": [
+            "izquierda",
+            "derecha"
+          ]
+        },
+        {
+          "tipo": "jefe",
+          "cantidad": 1,
+          "intervalo": 1,
+          "retraso": 20,
+          "aparicion": "cualquiera"
+        }
       ]
     }
   ],
   "escalado": {
-    "cantidad": 1.2,
-    "intervalo": 0.92,
-    "intervaloMinimo": 0.6
+    "cantidad": 1.15,
+    "intervalo": 0.93,
+    "intervaloMinimo": 1
   }
 }
