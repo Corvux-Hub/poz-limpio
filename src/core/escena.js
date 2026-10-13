@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 
-const COLOR_FONDO = 0x050608;
-const COLOR_SUELO = 0x2e3036;
-// El suelo se extiende más allá del mapa para que no se vea su borde.
-const EXTENSION_SUELO = 3;
+// Fondo y bruma del mismo color: lo lejano (edificios, avenidas) se pierde en la noche.
+const COLOR_NOCHE = 0x07090f;
+const NIEBLA = { cerca: 34, lejos: 78 };
 
-const LUZ_AMBIENTE = { cielo: 0x6f7f99, suelo: 0x14100c, intensidad: 0.9 };
+const LUZ_AMBIENTE = { cielo: 0x6f7f99, suelo: 0x14100c, intensidad: 0.5 };
 // Entra desde el lado de la cámara: ilumina el frente de lo que se ve y proyecta las sombras hacia atrás.
-const LUZ_LUNA = { color: 0xaabbdd, intensidad: 1.8, posicion: [-8, 25, 12], resolucionSombra: 2048 };
-// Farol cálido sobre el pozo: lo único bien iluminado del mapa.
-const LUZ_POZO = { color: 0xffc98a, intensidad: 40, altura: 5, alcance: 12 };
+const LUZ_LUNA = { color: 0xaabbdd, intensidad: 1.25, posicion: [-8, 25, 12], resolucionSombra: 2048 };
+// Las sombras cubren el mapa y un poco de lo que lo rodea.
+const MARGEN_SOMBRAS = 6;
 
+// Renderer, escena, bruma y luces generales. El suelo y el decorado los pone el escenario.
 export function crearEscena(contenedor, mapa) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -19,16 +19,8 @@ export function crearEscena(contenedor, mapa) {
   contenedor.appendChild(renderer.domElement);
 
   const escena = new THREE.Scene();
-  escena.background = new THREE.Color(COLOR_FONDO);
-
-  const ladoSuelo = Math.max(mapa.ancho, mapa.alto) * EXTENSION_SUELO;
-  const suelo = new THREE.Mesh(
-    new THREE.PlaneGeometry(ladoSuelo, ladoSuelo),
-    new THREE.MeshStandardMaterial({ color: COLOR_SUELO, roughness: 1 }),
-  );
-  suelo.rotation.x = -Math.PI / 2;
-  suelo.receiveShadow = true;
-  escena.add(suelo);
+  escena.background = new THREE.Color(COLOR_NOCHE);
+  escena.fog = new THREE.Fog(COLOR_NOCHE, NIEBLA.cerca, NIEBLA.lejos);
 
   escena.add(new THREE.HemisphereLight(LUZ_AMBIENTE.cielo, LUZ_AMBIENTE.suelo, LUZ_AMBIENTE.intensidad));
 
@@ -37,18 +29,14 @@ export function crearEscena(contenedor, mapa) {
   luna.castShadow = true;
   luna.shadow.mapSize.setScalar(LUZ_LUNA.resolucionSombra);
   // La luz entra inclinada, así que la caja de sombras usa el lado mayor del mapa en ambos ejes.
-  const mitadMapa = Math.max(mapa.ancho, mapa.alto) / 2;
+  const mitad = Math.max(mapa.ancho, mapa.alto) / 2 + MARGEN_SOMBRAS;
   const sombra = luna.shadow.camera;
-  sombra.left = -mitadMapa;
-  sombra.right = mitadMapa;
-  sombra.top = mitadMapa;
-  sombra.bottom = -mitadMapa;
-  sombra.far = luna.position.length() * 2;
+  sombra.left = -mitad;
+  sombra.right = mitad;
+  sombra.top = mitad;
+  sombra.bottom = -mitad;
+  sombra.far = luna.position.length() * 3;
   escena.add(luna);
-
-  const farol = new THREE.PointLight(LUZ_POZO.color, LUZ_POZO.intensidad, LUZ_POZO.alcance);
-  farol.position.set(0, LUZ_POZO.altura, 0);
-  escena.add(farol);
 
   return { renderer, escena };
 }

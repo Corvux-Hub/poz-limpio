@@ -14,8 +14,8 @@ export function crearManguera(pozo, agarre, escalaAvatar) {
   const s = escalaAvatar;
   const ruta = new THREE.CatmullRomCurve3([
     new THREE.Vector3(pozo.radioInterior * 0.15, pozo.alturaAgua - 0.1, 0),
-    new THREE.Vector3(pozo.radioInterior * 0.6, pozo.altoBrocal + 0.2, 0.15),
-    new THREE.Vector3(pozo.radio + 0.05, pozo.altoBrocal + 0.1, 0.3),
+    new THREE.Vector3(pozo.radioInterior * 0.6, pozo.altoBrocal + 0.25, 0.15),
+    new THREE.Vector3(pozo.radio + 0.05, pozo.altoBrocal + 0.18, 0.3),
     new THREE.Vector3(pozo.radio + 0.15, pozo.altoBrocal * 0.3, 0.4),
     new THREE.Vector3(agarre.x - 0.4 * s, RADIO_MANGUERA, 0.32 * s),
     new THREE.Vector3(agarre.x - 0.15 * s, agarre.y * 0.45, 0.24 * s),

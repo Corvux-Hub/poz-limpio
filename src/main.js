@@ -15,6 +15,7 @@ import {
   perdio,
   seguirConLaSiguienteOleada,
 } from './core/partida.js';
+import { crearEscenario } from './entities/escenario.js';
 import { crearPozo } from './entities/pozo.js';
 import { crearJugador } from './entities/jugador.js';
 import { crearChorroVisual } from './entities/chorro.js';
@@ -37,9 +38,14 @@ const { renderer, escena } = crearEscena(contenedor, config.mapa);
 const camara = crearCamara(config.camara);
 const input = crearInput(renderer.domElement, camara, config.apuntado.alturaPlano);
 
+// El decorado con altura queda por fuera del rectángulo donde aparecen los enemigos.
+const escenario = crearEscenario({
+  x: config.mapa.ancho / 2 + config.enemigos.margenAparicion,
+  z: config.mapa.alto / 2 + config.enemigos.margenAparicion,
+});
 const pozo = crearPozo(config.pozo);
 const jugador = crearJugador(pozo, config.avatar);
-escena.add(pozo.grupo, jugador.grupo);
+escena.add(escenario.grupo, pozo.grupo, jugador.grupo);
 // En orden de apilado: las etiquetas quedan debajo del HUD y de las pantallas.
 const etiquetas = crearEtiquetasFlotantes(document.body);
 const hud = crearHud(document.body);
@@ -189,8 +195,9 @@ function cuadro(tiempo) {
   const dtVisual = jugando ? dt : 0;
 
   // Render.
+  escenario.actualizar(dtVisual);
   jugador.sincronizar(partida.apuntado);
-  pozo.sincronizar(partida.contaminacion.porcentaje);
+  pozo.sincronizar(partida.contaminacion.porcentaje, dtVisual);
   chorroVisual.sincronizar(partida.chorro);
   sincronizarEnemigos(dtVisual);
   for (const enemigo of limpiados) {
