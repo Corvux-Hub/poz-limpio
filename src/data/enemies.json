@@ -9,7 +9,13 @@
     "intervaloGolpe": 2,
     "recompensa": 10,
     "colorBase": "#5a4738",
-    "colorLimpio": "#e3ebf0"
+    "colorLimpio": "#e3ebf0",
+    "aspecto": {
+      "accesorios": [
+        "gorra"
+      ],
+      "colorAccesorio": "#7a3b2e"
+    }
   },
   "oficinista": {
     "nombre": "Oficinista sucio",
@@ -21,7 +27,13 @@
     "intervaloGolpe": 2,
     "recompensa": 18,
     "colorBase": "#3e4446",
-    "colorLimpio": "#e6ecf2"
+    "colorLimpio": "#e6ecf2",
+    "aspecto": {
+      "accesorios": [
+        "corbata"
+      ],
+      "colorAccesorio": "#8a2433"
+    }
   },
   "obrero": {
     "nombre": "Obrero corpulento con palo",
@@ -34,7 +46,13 @@
     "recompensa": 30,
     "arma": "palo",
     "colorBase": "#6a5030",
-    "colorLimpio": "#eef0ea"
+    "colorLimpio": "#eef0ea",
+    "aspecto": {
+      "accesorios": [
+        "casco"
+      ],
+      "colorAccesorio": "#d9a321"
+    }
   },
   "jefe": {
     "nombre": "Jefe de basurero",
@@ -47,6 +65,13 @@
     "recompensa": 60,
     "arma": "tubo",
     "colorBase": "#3a4529",
-    "colorLimpio": "#f0f4ec"
+    "colorLimpio": "#f0f4ec",
+    "aspecto": {
+      "accesorios": [
+        "chaleco",
+        "gorra"
+      ],
+      "colorAccesorio": "#c9d43c"
+    }
   }
 }
